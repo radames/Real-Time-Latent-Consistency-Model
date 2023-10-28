@@ -1,0 +1,246 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Latent Consistency Model</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.1/iframeResizer.contentWindow.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+
+        const seedEl = document.querySelector("#seed");
+        const promptEl = document.querySelector("#prompt");
+        const guidanceEl = document.querySelector("#guidance-scale");
+        const strengthEl = document.querySelector("#strength");
+        const startBtn = document.querySelector("#start");
+        const stopBtn = document.querySelector("#stop");
+        const videoEl = document.querySelector("#webcam");
+        const imageEl = document.querySelector("#player");
+        const queueSizeEl = document.querySelector("#queue_size");
+        const errorEl = document.querySelector("#error");
+
+        function LCMLive(webcamVideo, liveImage) {
+            let websocket;
+
+            async function start(params) {
+                return new Promise((resolve, reject) => {
+                    const websocketURL = `${window.location.protocol === "https:" ? "wss" : "ws"
+                        }:${window.location.host}/ws`;
+
+                    const socket = new WebSocket(websocketURL);
+                    socket.onopen = () => {
+                        console.log("Connected to websocket");
+                    };
+                    socket.onclose = () => {
+                        console.log("Disconnected from websocket");
+                        stop();
+                        resolve({ "status": "disconnected" });
+                    };
+                    socket.onerror = (err) => {
+                        console.error(err);
+                        reject(err);
+                    };
+                    socket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        switch (data.status) {
+                            case "success":
+                                socket.send(JSON.stringify(params));
+                                const userId = data.userId;
+                                liveImage.src = `/stream/${userId}`;
+                                initVideoStream();
+                                break;
+                            case "timeout":
+                                stop();
+                                resolve({ "status": "timeout" });
+                            case "error":
+                                stop();
+                                reject(data.message);
+
+                        }
+                    };
+                    websocket = socket;
+                })
+            }
+
+            async function videoTimeUpdateHandler() {
+                const canvas = new OffscreenCanvas(webcamVideo.videoWidth, webcamVideo.videoHeight);
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
+                const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 1 });
+                websocket.send(blob);
+            }
+
+            function initVideoStream() {
+                const constraints = {
+                    audio: false,
+                    video: { width: 512, height: 512 },
+                };
+                navigator.mediaDevices
+                    .getUserMedia(constraints)
+                    .then((mediaStream) => {
+                        webcamVideo.srcObject = mediaStream;
+                        webcamVideo.onloadedmetadata = () => {
+                            webcamVideo.play();
+                            webcamVideo.addEventListener("timeupdate", videoTimeUpdateHandler);
+                        };
+                    })
+                    .catch((err) => {
+                        console.error(`${err.name}: ${err.message}`);
+                    });
+            }
+
+            async function stop() {
+                websocket.close();
+                navigator.mediaDevices.getUserMedia({ video: true }).then((mediaStream) => {
+                    mediaStream.getTracks().forEach((track) => track.stop());
+                });
+                webcamVideo.removeEventListener("timeupdate", videoTimeUpdateHandler);
+                webcamVideo.srcObject = null;
+            }
+            return {
+                start,
+                stop
+            }
+        }
+        function toggleMessage(type) {
+            errorEl.hidden = false;
+            switch (type) {
+                case "error":
+                    errorEl.innerText = "To many users are using the same GPU, please try again later.";
+                    errorEl.classList.toggle("bg-red-300", "text-red-900");
+                    break;
+                case "success":
+                    errorEl.innerText = "Your 2min session has ended, please start training again.";
+                    errorEl.classList.toggle("bg-green-300", "text-green-900");
+                    break;
+            }
+            setTimeout(() => {
+                errorEl.hidden = true;
+            }, 5000);
+        }
+
+
+        const lcmLive = LCMLive(videoEl, imageEl);
+        startBtn.addEventListener("click", async () => {
+            try {
+                const seed = seedEl.value;
+                const prompt = promptEl.value;
+                const guidance_scale = guidanceEl.value;
+                const strength = strengthEl.value;
+                startBtn.disabled = true;
+                const res = await lcmLive.start({ seed, prompt, guidance_scale, strength });
+                startBtn.disabled = false;
+                if (res.status === "timeout")
+                    toggleMessage("success")
+            } catch (err) {
+                console.log(err);
+                toggleMessage("error")
+            }
+        });
+        stopBtn.addEventListener("click", () => {
+            lcmLive.stop();
+        });
+        window.addEventListener("beforeunload", () => {
+            lcmLive.stop();
+        });
+        setInterval(() =>
+            fetch("/queue_size")
+                .then((res) => res.json())
+                .then((data) => {
+                    queueSizeEl.innerText = data.queue_size;
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+            , 1000);
+    </script>
+</head>
+
+<body>
+    <div class="fixed right-2 top-2 p-4 font-bold text-sm rounded-lg max-w-xs text-center" id="error">
+    </div>
+    <main class="container mx-auto px-4 py-4 max-w-4xl flex flex-col gap-4">
+        <article class="text-center max-w-xl mx-auto">
+            <h1 class="text-3xl font-bold  mb-4">Real-Time Latent Consistency Model</h1>
+
+            <p class="text-sm">
+                This demo showcases
+                <a href="https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7" target="_blank"
+                    class="text-blue-500 hover:underline">LCM</a>
+                using
+                <a href="https://github.com/huggingface/diffusers/tree/main/examples/community#latent-consistency-pipeline"
+                    target="_blank" class="text-blue-500 hover:underline">Diffusers</a> with a MJPEG
+                stream server.
+            </p>
+            <p class="text-sm">
+                To change settings or prompt, stop the current stream and start a new one.
+            </p>
+            <p class="text-sm">
+                There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU, affecting
+                real-time performance. Maximum queue size is 4. <a
+                    href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
+                    target="_blank" class="text-blue-500 hover:underline">Duplicate</a> and run it on your own GPU.
+            </p>
+        </article>
+        <div>
+            <div class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
+                <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1 resize-none outline-none"
+                    title="Prompt" oninput="this.style.height = 0;this.style.height = this.scrollHeight + 'px'"
+                    placeholder="Add your prompt here...">Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5, cinematic, masterpiece</textarea>
+            </div>
+
+        </div>
+        <div class="">
+            <details>
+                <summary class="font-medium cursor-pointer">Advanced Options</summary>
+                <div class="grid grid-cols-3 max-w-md items-center gap-3 py-3">
+                    <label class="text-sm font-medium" for="guidance-scale">Guidance Scale
+                    </label>
+                    <input type="range" id="guidance-scale" name="guidance-scale" min="1" max="30" step="0.001"
+                        value="8.0" oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        8.0</output>
+                    <label class="text-sm font-medium" for="strength">Strength</label>
+                    <input type="range" id="strength" name="strength" min="0" max="1" step="0.01" value="0.50"
+                        oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        0.5</output>
+                    <label class="text-sm font-medium" for="seed">Seed</label>
+                    <input type="number" id="seed" name="seed" value="299792458"
+                        class="font-light border border-gray-700 text-right rounded-md p-2">
+                    <button
+                        onclick="document.querySelector('#seed').value = BigInt(Math.floor(Math.random() * 2**64-1))"
+                        class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-1 w-[50px] rounded disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                        Rand
+                    </button>
+                </div>
+            </details>
+        </div>
+        <div>
+            <button id="start"
+                class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-2 w-16 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+                Start
+            </button>
+            <button id="stop"
+                class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-2 w-16 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+                Stop
+            </button>
+        </div>
+        <div class="relative rounded-lg border border-slate-300 overflow-hidden">
+            <img id="player" class="w-full aspect-square rounded-lg "
+                src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
+            <div class="absolute top-0 left-0 w-1/4 aspect-square">
+                <video id="webcam" class="w-full aspect-square relative z-10" playsinline autoplay muted loop></video>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 448" width="100"
+                    class="w-full p-4 absolute top-0 opacity-20 z-0">
+                    <path fill="currentColor"
+                        d="M224 256a128 128 0 1 0 0-256 128 128 0 1 0 0 256zm-45.7 48A178.3 178.3 0 0 0 0 482.3 29.7 29.7 0 0 0 29.7 512h388.6a29.7 29.7 0 0 0 29.7-29.7c0-98.5-79.8-178.3-178.3-178.3h-91.4z" />
+                </svg>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

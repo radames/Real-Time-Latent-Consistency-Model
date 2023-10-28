@@ -1,0 +1,8 @@
+diffusers
+transformers
+gradio
+torch
+fastapi
+uvicorn
+Pillow
+accelerate
