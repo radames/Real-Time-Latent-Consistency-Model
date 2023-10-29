@@ -55,7 +55,7 @@ def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232)
         strength=strength,
         num_inference_steps=num_inference_steps,
         guidance_scale=guidance_scale,
-        lcm_origin_steps=20,
+        lcm_origin_steps=30,
         output_type="pil",
     )
     nsfw_content_detected = (
@@ -106,9 +106,12 @@ async def websocket_endpoint(websocket: WebSocket):
             "queue": asyncio.Queue(),
             "params": params,
         }
+        await websocket.send_json(
+            {"status": "start", "message": "Start Streaming", "userId": uid}
+        )
         await handle_websocket_data(websocket, uid)
     except WebSocketDisconnect as e:
-        logging.error(f"Error: {e}")
+        logging.error(f"WebSocket Error: {e}, {uid}")
         traceback.print_exc()
     finally:
         print(f"User disconnected: {uid}")
@@ -131,36 +134,39 @@ async def get_queue_size():
 @app.get("/stream/{user_id}")
 async def stream(user_id: uuid.UUID):
     uid = str(user_id)
-    user_queue = user_queue_map[uid]
-    queue = user_queue["queue"]
-    params = user_queue["params"]
-    seed = params.seed
-    prompt = params.prompt
-    strength = params.strength
-    guidance_scale = params.guidance_scale
-    if not queue:
+    try:
+        user_queue = user_queue_map[uid]
+        queue = user_queue["queue"]
+        params = user_queue["params"]
+        seed = params.seed
+        prompt = params.prompt
+        strength = params.strength
+        guidance_scale = params.guidance_scale
+
+        async def generate():
+            while True:
+                input_image = await queue.get()
+                if input_image is None:
+                    continue
+
+                image = predict(input_image, prompt, guidance_scale, strength, seed)
+                if image is None:
+                    continue
+                frame_data = io.BytesIO()
+                image.save(frame_data, format="JPEG")
+                frame_data = frame_data.getvalue()
+                if frame_data is not None and len(frame_data) > 0:
+                    yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_data + b"\r\n"
+
+                await asyncio.sleep(1.0 / 120.0)
+
+        return StreamingResponse(
+            generate(), media_type="multipart/x-mixed-replace;boundary=frame"
+        )
+    except Exception as e:
+        logging.error(f"Streaming Error: {e}, {user_queue_map}")
+        traceback.print_exc()
         return HTTPException(status_code=404, detail="User not found")
-
-    async def generate():
-        while True:
-            input_image = await queue.get()
-            if input_image is None:
-                continue
-
-            image = predict(input_image, prompt, guidance_scale, strength, seed)
-            if image is None:
-                continue
-            frame_data = io.BytesIO()
-            image.save(frame_data, format="JPEG")
-            frame_data = frame_data.getvalue()
-            if frame_data is not None and len(frame_data) > 0:
-                yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_data + b"\r\n"
-
-            await asyncio.sleep(1.0 / 120.0)
-
-    return StreamingResponse(
-        generate(), media_type="multipart/x-mixed-replace;boundary=frame"
-    )
 
 
 async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
@@ -182,7 +188,7 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
                     continue
             await queue.put(pil_image)
             if TIMEOUT > 0 and time.time() - last_time > TIMEOUT:
-                await websocket.send_json( 
+                await websocket.send_json(
                     {
                         "status": "timeout",
                         "message": "Your session has ended",
