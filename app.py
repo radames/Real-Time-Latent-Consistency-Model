@@ -23,6 +23,9 @@ MAX_QUEUE_SIZE = 4
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 
+print(f"TIMEOUT: {TIMEOUT}")
+print(f"SAFETY_CHECKER: {SAFETY_CHECKER}")
+print(f"MAX_QUEUE_SIZE: {MAX_QUEUE_SIZE}")
 
 if SAFETY_CHECKER == "True":
     pipe = DiffusionPipeline.from_pretrained(
