@@ -44,8 +44,10 @@ else:
 # pipe.vae = AutoencoderTiny.from_pretrained(
 #     "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
 # )
-pipe.to(torch_device="cuda", torch_dtype=torch.float16)
 pipe.set_progress_bar_config(disable=True)
+pipe.to(torch_device="cuda", torch_dtype=torch.float16)
+pipe.unet.to(memory_format=torch.channels_last)
+pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 user_queue_map = {}
 
 
@@ -55,7 +57,7 @@ def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232)
     num_inference_steps = 4
     results = pipe(
         prompt=prompt,
-        generator=generator,
+        # generator=generator,
         image=input_image,
         strength=strength,
         num_inference_steps=num_inference_steps,
