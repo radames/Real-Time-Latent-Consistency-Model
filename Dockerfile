@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     build-essential \
     python3.9 \
     python3-pip \
+    python3-dev \
     git \
     ffmpeg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
