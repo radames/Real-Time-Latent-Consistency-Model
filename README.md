@@ -54,4 +54,6 @@ docker run -ti -e TIMEOUT=0 -e SAFETY_CHECKER=False -p 7860:7860 --gpus all lcm-
 # Demo on Hugging Face
 https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model
 
-![video](https://github.com/radames/Real-Time-Latent-Consistency-Model/assets/102277/2fb8336c-62b3-4aac-97a7-f6c1fac4f38b)
+
+https://github.com/radames/Real-Time-Latent-Consistency-Model/assets/102277/c4003ac5-e7ff-44c0-97d3-464bb659de70
+
