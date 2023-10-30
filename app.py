@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, AutoencoderTiny
 import torch
 from PIL import Image
 import numpy as np
@@ -19,7 +19,7 @@ import uuid
 import os
 import time
 
-MAX_QUEUE_SIZE = 4
+MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 
@@ -40,7 +40,12 @@ else:
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
     )
+#TODO try to use tiny VAE
+# pipe.vae = AutoencoderTiny.from_pretrained(
+#     "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
+# )
 pipe.to(torch_device="cuda", torch_dtype=torch.float16)
+pipe.set_progress_bar_config(disable=True)
 user_queue_map = {}
 
 
@@ -88,7 +93,7 @@ class InputParams(BaseModel):
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    if len(user_queue_map) >= MAX_QUEUE_SIZE:
+    if MAX_QUEUE_SIZE > 0 and len(user_queue_map) >= MAX_QUEUE_SIZE:
         print("Server is full")
         await websocket.send_json({"status": "error", "message": "Server is full"})
         await websocket.close()
