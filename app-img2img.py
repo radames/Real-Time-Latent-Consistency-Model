@@ -49,7 +49,7 @@ else:
 pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device="cuda", torch_dtype=torch.float32)
 pipe.unet.to(memory_format=torch.channels_last)
-# pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 user_queue_map = {}
 
 # for torch.compile
@@ -145,7 +145,7 @@ async def stream(user_id: uuid.UUID):
     try:
         user_queue = user_queue_map[uid]
         queue = user_queue["queue"]
-        
+
         async def generate():
             while True:
                 data = await queue.get()
