@@ -32,7 +32,6 @@ if SAFETY_CHECKER == "True":
         "SimianLuo/LCM_Dreamshaper_v7",
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
-        torch_dtype=torch.float32
     )
 else:
     pipe = DiffusionPipeline.from_pretrained(
@@ -40,14 +39,13 @@ else:
         safety_checker=None,
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
-        torch_dtype=torch.float32
     )
 #TODO try to use tiny VAE
 # pipe.vae = AutoencoderTiny.from_pretrained(
 #     "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
 # )
 pipe.set_progress_bar_config(disable=True)
-pipe.to(torch_device="cuda", torch_dtype=torch.float32)
+pipe.to(torch_device="cuda", torch_dtype=torch.float16)
 pipe.unet.to(memory_format=torch.channels_last)
 pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 user_queue_map = {}
