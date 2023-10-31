@@ -1,8 +1,9 @@
-diffusers
-transformers
-gradio
-torch
-fastapi
-uvicorn
-Pillow
-accelerate
+diffusers==0.21.4 
+transformers==4.34.1
+gradio==3.50.2
+torch==2.1.0
+fastapi==0.104.0
+uvicorn==0.23.2
+Pillow==10.1.0
+accelerate==0.24.0
+compel==2.0.2
