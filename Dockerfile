@@ -36,4 +36,4 @@ WORKDIR $HOME/app
 # Copy the current directory contents into the container at $HOME/app setting the owner to the user
 COPY --chown=user . $HOME/app
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "app-img2img:app", "--host", "0.0.0.0", "--port", "7860"]

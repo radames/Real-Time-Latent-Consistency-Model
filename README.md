@@ -24,18 +24,18 @@ You need CUDA and Python
 python -m venv venv 
 source venv/bin/activate 
 pip install -r requirements.txt
-uvicorn "app:app" --host 0.0.0.0 --port 7860 --reload
+uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
 or with environment variables
 ```bash
-TIMEOUT=120 SAFETY_CHECKER=True MAX_QUEUE_SIZE=4 uvicorn "app:app" --host 0.0.0.0 --port 7860 --reload
+TIMEOUT=120 SAFETY_CHECKER=True MAX_QUEUE_SIZE=4 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
 
 If you're running locally and want to test it on Mobile Safari, the webserver needs to be served over HTTPS. 
 
 ```bash
 openssl req -newkey rsa:4096 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
-uvicorn "app:app" --host 0.0.0.0 --port 7860 --reload --log-level info --ssl-certfile=certificate.pem --ssl-keyfile=key.pem
+uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload --log-level info --ssl-certfile=certificate.pem --ssl-keyfile=key.pem
 ```
 ## Docker
 You need NVIDIA Container Toolkit for Docker

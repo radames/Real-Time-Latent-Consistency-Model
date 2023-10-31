@@ -32,6 +32,7 @@ if SAFETY_CHECKER == "True":
         "SimianLuo/LCM_Dreamshaper_v7",
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
+        torch_dtype=torch.float32
     )
 else:
     pipe = DiffusionPipeline.from_pretrained(
@@ -39,17 +40,20 @@ else:
         safety_checker=None,
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
+        torch_dtype=torch.float32
     )
 #TODO try to use tiny VAE
 # pipe.vae = AutoencoderTiny.from_pretrained(
 #     "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
 # )
 pipe.set_progress_bar_config(disable=True)
-pipe.to(torch_device="cuda", torch_dtype=torch.float16)
+pipe.to(torch_device="cuda", torch_dtype=torch.float32)
 pipe.unet.to(memory_format=torch.channels_last)
 pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 user_queue_map = {}
 
+# for torch.compile
+pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
 
 def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232):
     generator = torch.manual_seed(seed)
@@ -210,4 +214,4 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
         traceback.print_exc()
 
 
-app.mount("/", StaticFiles(directory="public", html=True), name="public")
+app.mount("/", StaticFiles(directory="img2img", html=True), name="public")
