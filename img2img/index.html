@@ -21,10 +21,10 @@
         const queueSizeEl = document.querySelector("#queue_size");
         const errorEl = document.querySelector("#error");
 
-        function LCMLive(webcamVideo, liveImage) {
+        function LCMLive(webcamVideo, liveImage, seedEl, promptEl, guidanceEl, strengthEl) {
             let websocket;
 
-            async function start(params) {
+            async function start() {
                 return new Promise((resolve, reject) => {
                     const websocketURL = `${window.location.protocol === "https:" ? "wss" : "ws"
                         }:${window.location.host}/ws`;
@@ -46,7 +46,6 @@
                         const data = JSON.parse(event.data);
                         switch (data.status) {
                             case "success":
-                                socket.send(JSON.stringify(params));
                                 break;
                             case "start":
                                 const userId = data.userId;
@@ -71,6 +70,12 @@
                 ctx.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
                 const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 1 });
                 websocket.send(blob);
+                websocket.send(JSON.stringify({
+                    "seed": seedEl.value,
+                    "prompt": promptEl.value,
+                    "guidance_scale": guidanceEl.value,
+                    "strength": strengthEl.value
+                }));
             }
 
             function initVideoStream(userId) {
@@ -124,15 +129,11 @@
         }
 
 
-        const lcmLive = LCMLive(videoEl, imageEl);
+        const lcmLive = LCMLive(videoEl, imageEl, seedEl, promptEl, guidanceEl, strengthEl);
         startBtn.addEventListener("click", async () => {
             try {
-                const seed = seedEl.value;
-                const prompt = promptEl.value;
-                const guidance_scale = guidanceEl.value;
-                const strength = strengthEl.value;
                 startBtn.disabled = true;
-                const res = await lcmLive.start({ seed, prompt, guidance_scale, strength });
+                const res = await lcmLive.start();
                 startBtn.disabled = false;
                 if (res.status === "timeout")
                     toggleMessage("success")
@@ -177,9 +178,6 @@
                 stream server.
             </p>
             <p class="text-sm">
-                To change settings or prompt, stop the current stream and start a new one.
-            </p>
-            <p class="text-sm">
                 There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU, affecting
                 real-time performance. Maximum queue size is 4. <a
                     href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
@@ -218,7 +216,7 @@
                     <input type="number" id="seed" name="seed" value="299792458"
                         class="font-light border border-gray-700 text-right rounded-md p-2">
                     <button
-                        onclick="document.querySelector('#seed').value = BigInt(Math.floor(Math.random() * 2**64-1))"
+                        onclick="document.querySelector('#seed').value = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)"
                         class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-1 w-[50px] rounded disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
                         Rand
                     </button>

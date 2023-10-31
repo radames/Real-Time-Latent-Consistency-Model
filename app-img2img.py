@@ -49,7 +49,7 @@ else:
 pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device="cuda", torch_dtype=torch.float32)
 pipe.unet.to(memory_format=torch.channels_last)
-pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+# pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 user_queue_map = {}
 
 # for torch.compile
@@ -58,7 +58,7 @@ pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
 def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232):
     generator = torch.manual_seed(seed)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
-    num_inference_steps = 4
+    num_inference_steps = 3
     results = pipe(
         prompt=prompt,
         # generator=generator,
@@ -66,7 +66,7 @@ def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232)
         strength=strength,
         num_inference_steps=num_inference_steps,
         guidance_scale=guidance_scale,
-        lcm_origin_steps=30,
+        lcm_origin_steps=20,
         output_type="pil",
     )
     nsfw_content_detected = (
@@ -111,11 +111,8 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_json(
             {"status": "success", "message": "Connected", "userId": uid}
         )
-        params = await websocket.receive_json()
-        params = InputParams(**params)
         user_queue_map[uid] = {
-            "queue": asyncio.Queue(),
-            "params": params,
+            "queue": asyncio.Queue()
         }
         await websocket.send_json(
             {"status": "start", "message": "Start Streaming", "userId": uid}
@@ -148,19 +145,16 @@ async def stream(user_id: uuid.UUID):
     try:
         user_queue = user_queue_map[uid]
         queue = user_queue["queue"]
-        params = user_queue["params"]
-        seed = params.seed
-        prompt = params.prompt
-        strength = params.strength
-        guidance_scale = params.guidance_scale
-
+        
         async def generate():
             while True:
-                input_image = await queue.get()
+                data = await queue.get()
+                input_image = data["image"]
+                params = data["params"]
                 if input_image is None:
                     continue
 
-                image = predict(input_image, prompt, guidance_scale, strength, seed)
+                image = predict(input_image, params.prompt, params.guidance_scale, params.strength, params.seed)
                 if image is None:
                     continue
                 frame_data = io.BytesIO()
@@ -190,6 +184,8 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
     try:
         while True:
             data = await websocket.receive_bytes()
+            params = await websocket.receive_json()
+            params = InputParams(**params)
             pil_image = Image.open(io.BytesIO(data))
 
             while not queue.empty():
@@ -197,7 +193,10 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
                     queue.get_nowait()
                 except asyncio.QueueEmpty:
                     continue
-            await queue.put(pil_image)
+            await queue.put({
+                "image": pil_image,
+                "params": params
+            })
             if TIMEOUT > 0 and time.time() - last_time > TIMEOUT:
                 await websocket.send_json(
                     {
