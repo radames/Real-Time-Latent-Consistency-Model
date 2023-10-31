@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from diffusers import DiffusionPipeline, AutoencoderTiny
+from compel import Compel
 import torch
 from PIL import Image
 import numpy as np
@@ -48,6 +49,7 @@ pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device="cuda", torch_dtype=torch.float16)
 pipe.unet.to(memory_format=torch.channels_last)
 pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+compel_proc = Compel(tokenizer=pipe.tokenizer, text_encoder=pipe.text_encoder, truncate_long_prompts=False)
 user_queue_map = {}
 
 # for torch.compile
@@ -55,10 +57,11 @@ pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
 
 def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232):
     generator = torch.manual_seed(seed)
+    prompt_embeds = compel_proc(prompt)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
     num_inference_steps = 3
     results = pipe(
-        prompt=prompt,
+        prompt_embeds=prompt_embeds,
         generator=generator,
         image=input_image,
         strength=strength,

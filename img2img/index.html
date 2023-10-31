@@ -171,23 +171,26 @@
             <p class="text-sm">
                 This demo showcases
                 <a href="https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7" target="_blank"
-                    class="text-blue-500 hover:underline">LCM</a> Image to Image pipeline
+                    class="text-blue-500 underline hover:no-underline">LCM</a> Image to Image pipeline
                 using
                 <a href="https://github.com/huggingface/diffusers/tree/main/examples/community#latent-consistency-pipeline"
-                    target="_blank" class="text-blue-500 hover:underline">Diffusers</a> with a MJPEG
+                    target="_blank" class="text-blue-500 underline hover:no-underline">Diffusers</a> with a MJPEG
                 stream server.
             </p>
             <p class="text-sm">
                 There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU, affecting
                 real-time performance. Maximum queue size is 4. <a
                     href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
-                    target="_blank" class="text-blue-500 hover:underline">Duplicate</a> and run it on your own GPU.
+                    target="_blank" class="text-blue-500 underline hover:no-underline">Duplicate</a> and run it on your
+                own GPU.
             </p>
         </article>
         <div>
             <h2 class="font-medium">Prompt</h2>
             <p class="text-sm text-gray-500">
-                Change the prompt to generate different images.
+                Change the prompt to generate different images, accepts <a
+                    href="https://github.com/damian0815/compel/blob/main/doc/syntax.md" target="_blank"
+                    class="text-blue-500 underline hover:no-underline">Compel</a> syntax.
             </p>
             <div class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
                 <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1 outline-none"
