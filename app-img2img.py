@@ -59,7 +59,7 @@ def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232)
     num_inference_steps = 3
     results = pipe(
         prompt=prompt,
-        # generator=generator,
+        generator=generator,
         image=input_image,
         strength=strength,
         num_inference_steps=num_inference_steps,
