@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Latent Consistency Model</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.1/iframeResizer.contentWindow.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+
+        const seedEl = document.querySelector("#seed");
+        const promptEl = document.querySelector("#prompt");
+        const guidanceEl = document.querySelector("#guidance-scale");
+        const startBtn = document.querySelector("#start");
+        const stopBtn = document.querySelector("#stop");
+        const videoEl = document.querySelector("#webcam");
+        const imageEl = document.querySelector("#player");
+        const queueSizeEl = document.querySelector("#queue_size");
+        const errorEl = document.querySelector("#error");
+
+        function LCMLive(promptEl, liveImage, seedEl, guidanceEl) {
+            let websocket;
+
+            async function start() {
+                return new Promise((resolve, reject) => {
+                    const websocketURL = `${window.location.protocol === "https:" ? "wss" : "ws"
+                        }:${window.location.host}/ws`;
+
+                    const socket = new WebSocket(websocketURL);
+                    socket.onopen = () => {
+                        console.log("Connected to websocket");
+                    };
+                    socket.onclose = () => {
+                        console.log("Disconnected from websocket");
+                        stop();
+                        resolve({ "status": "disconnected" });
+                    };
+                    socket.onerror = (err) => {
+                        console.error(err);
+                        reject(err);
+                    };
+                    socket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        switch (data.status) {
+                            case "success":
+                                break;
+                            case "start":
+                                const userId = data.userId;
+                                initPromptStream(userId);
+                                break;
+                            case "timeout":
+                                stop();
+                                resolve({ "status": "timeout" });
+                            case "error":
+                                stop();
+                                reject(data.message);
+                        }
+                    };
+                    websocket = socket;
+                })
+            }
+
+            async function promptUpdateStream() {
+                const prompt = promptEl.value;
+                const seed = seedEl.value;
+                const guidance_scale = guidanceEl.value;
+                websocket.send(JSON.stringify({
+                    prompt: prompt,
+                    seed: seed,
+                    guidance_scale: guidance_scale,
+                }));
+            }
+
+            function initPromptStream(userId) {
+                liveImage.src = `/stream/${userId}`;
+                promptEl.addEventListener("input", promptUpdateStream);
+                seedEl.addEventListener("input", promptUpdateStream);
+                guidanceEl.addEventListener("change", promptUpdateStream);
+            }
+
+            async function stop() {
+                websocket.close();
+                promptEl.removeEventListener("input", promptUpdateStream);
+                seedEl.removeEventListener("input", promptUpdateStream);
+                guidanceEl.removeEventListener("change", promptUpdateStream);
+            }
+            return {
+                start,
+                stop
+            }
+        }
+        function toggleMessage(type) {
+            errorEl.hidden = false;
+            switch (type) {
+                case "error":
+                    errorEl.innerText = "To many users are using the same GPU, please try again later.";
+                    errorEl.classList.toggle("bg-red-300", "text-red-900");
+                    break;
+                case "success":
+                    errorEl.innerText = "Your session has ended, please start a new one.";
+                    errorEl.classList.toggle("bg-green-300", "text-green-900");
+                    break;
+            }
+            setTimeout(() => {
+                errorEl.hidden = true;
+            }, 2000);
+        }
+
+
+        const lcmLive = LCMLive(promptEl, imageEl, seedEl, guidanceEl);
+        startBtn.addEventListener("click", async () => {
+            try {
+                startBtn.disabled = true;
+                const res = await lcmLive.start();
+                startBtn.disabled = false;
+                if (res.status === "timeout")
+                    toggleMessage("success")
+            } catch (err) {
+                console.log(err);
+                toggleMessage("error")
+            }
+        });
+        stopBtn.addEventListener("click", () => {
+            lcmLive.stop();
+        });
+        window.addEventListener("beforeunload", () => {
+            lcmLive.stop();
+        });
+        setInterval(() =>
+            fetch("/queue_size")
+                .then((res) => res.json())
+                .then((data) => {
+                    queueSizeEl.innerText = data.queue_size;
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+            , 5000);
+    </script>
+</head>
+
+<body>
+    <div class="fixed right-2 top-2 p-4 font-bold text-sm rounded-lg max-w-xs text-center" id="error">
+    </div>
+    <main class="container mx-auto px-4 py-4 max-w-4xl flex flex-col gap-4">
+        <article class="text-center max-w-xl mx-auto">
+            <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
+            <h2 class="text-2xl font-bold mb-4">Text to Image</h2>
+            <p class="text-sm">
+                This demo showcases
+                <a href="https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7" target="_blank"
+                    class="text-blue-500 underline hover:no-underline">LCM</a> Text to Image model
+                using
+                <a href="https://github.com/huggingface/diffusers/tree/main/examples/community#latent-consistency-pipeline"
+                    target="_blank" class="text-blue-500 underline hover:no-underline">Diffusers</a> with a MJPEG
+                stream server.
+            </p>
+            <p class="text-sm">
+                There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU, affecting
+                real-time performance. Maximum queue size is 10. <a
+                    href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
+                    target="_blank" class="text-blue-500 underline hover:no-underline">Duplicate</a> and run it on your own GPU.
+            </p>
+        </article>
+        <div>
+            <h2 class="font-medium">Prompt</h2>
+            <p class="text-sm text-gray-500">
+                Start your session and type your prompt here, accepts
+                <a href="https://github.com/damian0815/compel/blob/main/doc/syntax.md" target="_blank" class="text-blue-500 underline hover:no-underline">Compel</a> syntax.
+            </p>
+            <div class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
+                <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1  outline-none"
+                    title="Start your session and type your prompt here, you can see the result in real-time."
+                    placeholder="Add your prompt here...">Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5, cinematic, masterpiece</textarea>
+            </div>
+
+        </div>
+        <div class="">
+            <details>
+                <summary class="font-medium cursor-pointer">Advanced Options</summary>
+                <div class="grid grid-cols-3 max-w-md items-center gap-3 py-3">
+                    <label class="text-sm font-medium" for="guidance-scale">Guidance Scale
+                    </label>
+                    <input type="range" id="guidance-scale" name="guidance-scale" min="1" max="30" step="0.001"
+                        value="8.0" oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        8.0</output>
+                    <label class="text-sm font-medium" for="seed">Seed</label>
+                    <input type="number" id="seed" name="seed" value="299792458"
+                        class="font-light border border-gray-700 text-right rounded-md p-2">
+                    <button
+                        onclick="document.querySelector('#seed').value = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER); document.querySelector('#seed').dispatchEvent(new Event('input'));"
+                        class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-1 w-[50px] rounded disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                        Rand
+                    </button>
+                </div>
+            </details>
+        </div>
+        <div>
+            <button id="start"
+                class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-2 w-16 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+                Start
+            </button>
+            <button id="stop"
+                class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-2 w-16 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+                Stop
+            </button>
+        </div>
+        <div class="relative rounded-lg border border-slate-300 overflow-hidden">
+            <img id="player" class="w-full aspect-square rounded-lg "
+                src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
+        </div>
+    </main>
+</body>
+
+</html>

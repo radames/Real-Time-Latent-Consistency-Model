@@ -20,11 +20,21 @@ You need CUDA and Python
 `SAFETY_CHECKER`:  disabled if you want NSFW filter off  
 `MAX_QUEUE_SIZE`: limit number of users on current app instance
 
+### image to image
 ```bash
 python -m venv venv 
 source venv/bin/activate 
 pip install -r requirements.txt
 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
+```
+
+### text to image
+
+```bash
+python -m venv venv 
+source venv/bin/activate 
+pip install -r requirements.txt
+uvicorn "app-txt2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
 or with environment variables
 ```bash

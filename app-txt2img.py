@@ -31,40 +31,37 @@ print(f"MAX_QUEUE_SIZE: {MAX_QUEUE_SIZE}")
 if SAFETY_CHECKER == "True":
     pipe = DiffusionPipeline.from_pretrained(
         "SimianLuo/LCM_Dreamshaper_v7",
-        custom_pipeline="latent_consistency_img2img.py",
+        custom_pipeline="latent_consistency_txt2img.py",
         custom_revision="main",
     )
 else:
     pipe = DiffusionPipeline.from_pretrained(
         "SimianLuo/LCM_Dreamshaper_v7",
         safety_checker=None,
-        custom_pipeline="latent_consistency_img2img.py",
+        custom_pipeline="latent_consistency_txt2img.py",
         custom_revision="main",
     )
-#TODO try to use tiny VAE
-# pipe.vae = AutoencoderTiny.from_pretrained(
-#     "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
-# )
+pipe.vae = AutoencoderTiny.from_pretrained(
+    "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
+)
 pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device="cuda", torch_dtype=torch.float16)
 pipe.unet.to(memory_format=torch.channels_last)
-pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 compel_proc = Compel(tokenizer=pipe.tokenizer, text_encoder=pipe.text_encoder, truncate_long_prompts=False)
+pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 user_queue_map = {}
 
-# for torch.compile
-pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
+# warmup trigger compilation
+pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
-def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232):
+def predict(prompt, guidance_scale=8.0, seed=2159232):
     generator = torch.manual_seed(seed)
     prompt_embeds = compel_proc(prompt)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
-    num_inference_steps = 3
+    num_inference_steps = 8
     results = pipe(
         prompt_embeds=prompt_embeds,
         generator=generator,
-        image=input_image,
-        strength=strength,
         num_inference_steps=num_inference_steps,
         guidance_scale=guidance_scale,
         lcm_origin_steps=50,
@@ -91,9 +88,8 @@ app.add_middleware(
 
 
 class InputParams(BaseModel):
-    seed: int
     prompt: str
-    strength: float
+    seed: int
     guidance_scale: float
 
 
@@ -113,7 +109,7 @@ async def websocket_endpoint(websocket: WebSocket):
             {"status": "success", "message": "Connected", "userId": uid}
         )
         user_queue_map[uid] = {
-            "queue": asyncio.Queue()
+            "queue": asyncio.Queue(),
         }
         await websocket.send_json(
             {"status": "start", "message": "Start Streaming", "userId": uid}
@@ -149,13 +145,11 @@ async def stream(user_id: uuid.UUID):
 
         async def generate():
             while True:
-                data = await queue.get()
-                input_image = data["image"]
-                params = data["params"]
-                if input_image is None:
+                params = await queue.get()
+                if params is None:
                     continue
-
-                image = predict(input_image, params.prompt, params.guidance_scale, params.strength, params.seed)
+                
+                image = predict(params.prompt, params.guidance_scale, params.seed)
                 if image is None:
                     continue
                 frame_data = io.BytesIO()
@@ -184,20 +178,14 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
     last_time = time.time()
     try:
         while True:
-            data = await websocket.receive_bytes()
             params = await websocket.receive_json()
             params = InputParams(**params)
-            pil_image = Image.open(io.BytesIO(data))
-
             while not queue.empty():
                 try:
                     queue.get_nowait()
                 except asyncio.QueueEmpty:
                     continue
-            await queue.put({
-                "image": pil_image,
-                "params": params
-            })
+            await queue.put(params)
             if TIMEOUT > 0 and time.time() - last_time > TIMEOUT:
                 await websocket.send_json(
                     {
@@ -214,4 +202,4 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
         traceback.print_exc()
 
 
-app.mount("/", StaticFiles(directory="img2img", html=True), name="public")
+app.mount("/", StaticFiles(directory="txt2img", html=True), name="public")
