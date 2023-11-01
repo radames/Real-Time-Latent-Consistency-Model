@@ -15,7 +15,7 @@ You need a webcam to run this demo. 🤗
 
 ## Running Locally
 
-You need CUDA and Python  
+You need CUDA and Python or a Mac with an M1/M2/M3 chip
 `TIMEOUT`: limit user session timeout
 `SAFETY_CHECKER`: disabled if you want NSFW filter off  
 `MAX_QUEUE_SIZE`: limit number of users on current app instance
