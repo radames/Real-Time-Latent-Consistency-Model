@@ -25,6 +25,7 @@ import torch
 from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer
 
 from diffusers import (
+    AutoencoderTiny,
     AutoencoderKL,
     ConfigMixin,
     DiffusionPipeline,
@@ -226,13 +227,22 @@ class LatentConsistencyModelImg2ImgPipeline(DiffusionPipeline):
                 )
 
             elif isinstance(generator, list):
-                init_latents = [
-                    self.vae.encode(image[i : i + 1]).latent_dist.sample(generator[i])
-                    for i in range(batch_size)
-                ]
+                if isinstance(self.vae, AutoencoderTiny):
+                    init_latents = [
+                        self.vae.encode(image[i : i + 1]).latents
+                        for i in range(batch_size)
+                    ]
+                else:
+                    init_latents = [
+                        self.vae.encode(image[i : i + 1]).latent_dist.sample(generator[i])
+                        for i in range(batch_size)
+                    ]
                 init_latents = torch.cat(init_latents, dim=0)
             else:
-                init_latents = self.vae.encode(image).latent_dist.sample(generator)
+                if isinstance(self.vae, AutoencoderTiny):
+                    init_latents = self.vae.encode(image).latents
+                else:
+                    init_latents = self.vae.encode(image).latent_dist.sample(generator)
 
             init_latents = self.vae.config.scaling_factor * init_latents
 

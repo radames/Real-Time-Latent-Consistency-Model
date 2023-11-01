@@ -55,10 +55,9 @@ else:
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
     )
-# TODO try to use tiny VAE
-# pipe.vae = AutoencoderTiny.from_pretrained(
-#     "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
-# )
+pipe.vae = AutoencoderTiny.from_pretrained(
+    "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
+)
 pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
 pipe.unet.to(memory_format=torch.channels_last)
