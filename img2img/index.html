@@ -7,9 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.1/iframeResizer.contentWindow.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
-
+        const WIDTH = 768;
+        const HEIGHT = 768;
         const seedEl = document.querySelector("#seed");
         const promptEl = document.querySelector("#prompt");
         const guidanceEl = document.querySelector("#guidance-scale");
@@ -20,6 +22,7 @@
         const imageEl = document.querySelector("#player");
         const queueSizeEl = document.querySelector("#queue_size");
         const errorEl = document.querySelector("#error");
+        const snapBtn = document.querySelector("#snap");
 
         function LCMLive(webcamVideo, liveImage, seedEl, promptEl, guidanceEl, strengthEl) {
             let websocket;
@@ -65,9 +68,13 @@
             }
 
             async function videoTimeUpdateHandler() {
-                const canvas = new OffscreenCanvas(webcamVideo.videoWidth, webcamVideo.videoHeight);
+                const canvas = new OffscreenCanvas(WIDTH, HEIGHT);
+                const videoW  = webcamVideo.videoWidth;
+                const videoH = webcamVideo.videoHeight;
+
                 const ctx = canvas.getContext("2d");
-                ctx.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
+                // grap square from center
+                ctx.drawImage(webcamVideo, videoW / 2 - WIDTH / 2, videoH / 2 - HEIGHT / 2, WIDTH, HEIGHT, 0, 0, canvas.width, canvas.height);
                 const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 1 });
                 websocket.send(blob);
                 websocket.send(JSON.stringify({
@@ -82,7 +89,7 @@
                 liveImage.src = `/stream/${userId}`;
                 const constraints = {
                     audio: false,
-                    video: { width: 512, height: 512 },
+                    video: { width: WIDTH, height: HEIGHT },
                 };
                 navigator.mediaDevices
                     .getUserMedia(constraints)
@@ -128,12 +135,43 @@
                 errorEl.hidden = true;
             }, 2000);
         }
+        function snapImage() {
+            try {
+                const zeroth = {};
+                const exif = {};
+                const gps = {};
+                zeroth[piexif.ImageIFD.Make] = "LCM Image-to-Image";
+                zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${promptEl.value} | seed: ${seedEl.value} | guidance_scale: ${guidanceEl.value} | strength: ${strengthEl.value}`;
+                zeroth[piexif.ImageIFD.Software] = "https://github.com/radames/Real-Time-Latent-Consistency-Model";
+
+                exif[piexif.ExifIFD.DateTimeOriginal] = new Date().toISOString();
+
+                const exifObj = { "0th": zeroth, "Exif": exif, "GPS": gps };
+                const exifBytes = piexif.dump(exifObj);
+
+                const canvas = document.createElement("canvas");
+                canvas.width = imageEl.naturalWidth;
+                canvas.height = imageEl.naturalHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(imageEl, 0, 0);
+                const dataURL = canvas.toDataURL("image/jpeg");
+                const withExif = piexif.insert(exifBytes, dataURL);
+
+                const a = document.createElement("a");
+                a.href = withExif;
+                a.download = `lcm_txt_2_img${Date.now()}.png`;
+                a.click();
+            } catch (err) {
+                console.log(err);
+            }
+        }
 
 
         const lcmLive = LCMLive(videoEl, imageEl, seedEl, promptEl, guidanceEl, strengthEl);
         startBtn.addEventListener("click", async () => {
             try {
                 startBtn.disabled = true;
+                snapBtn.disabled = false;
                 const res = await lcmLive.start();
                 startBtn.disabled = false;
                 if (res.status === "timeout")
@@ -150,6 +188,7 @@
         window.addEventListener("beforeunload", () => {
             lcmLive.stop();
         });
+        snapBtn.addEventListener("click", snapImage);
         setInterval(() =>
             fetch("/queue_size")
                 .then((res) => res.json())
@@ -227,21 +266,25 @@
                 </div>
             </details>
         </div>
-        <div>
+        <div class="flex gap-3">
             <button id="start"
-                class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-2 w-16 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+                class="bg-gray-700 hover:bg-gray-800 text-white font-normal p-2 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
                 Start
             </button>
             <button id="stop"
-                class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-2 w-16 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+                class="bg-gray-700 hover:bg-gray-800 text-white font-normal p-2 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
                 Stop
+            </button>
+            <button id="snap" disabled
+                class="bg-gray-700 hover:bg-gray-800 text-white font-normal p-2  rounded disabled:bg-gray-300 disabled:cursor-not-allowed ml-auto">
+                Snapshot
             </button>
         </div>
         <div class="relative rounded-lg border border-slate-300 overflow-hidden">
             <img id="player" class="w-full aspect-square rounded-lg "
                 src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
             <div class="absolute top-0 left-0 w-1/4 aspect-square">
-                <video id="webcam" class="w-full aspect-square relative z-10" playsinline autoplay muted loop></video>
+                <video id="webcam" class="w-full aspect-square relative z-10 object-cover" playsinline autoplay muted loop></video>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 448" width="100"
                     class="w-full p-4 absolute top-0 opacity-20 z-0">
                     <path fill="currentColor"
