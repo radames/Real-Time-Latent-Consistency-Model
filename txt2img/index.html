@@ -121,6 +121,7 @@
             } catch (err) {
                 console.log(err);
                 toggleMessage("error")
+                startBtn.disabled = false;
             }
         });
         stopBtn.addEventListener("click", () => {
@@ -162,14 +163,16 @@
                 There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU, affecting
                 real-time performance. Maximum queue size is 10. <a
                     href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
-                    target="_blank" class="text-blue-500 underline hover:no-underline">Duplicate</a> and run it on your own GPU.
+                    target="_blank" class="text-blue-500 underline hover:no-underline">Duplicate</a> and run it on your
+                own GPU.
             </p>
         </article>
         <div>
             <h2 class="font-medium">Prompt</h2>
             <p class="text-sm text-gray-500">
                 Start your session and type your prompt here, accepts
-                <a href="https://github.com/damian0815/compel/blob/main/doc/syntax.md" target="_blank" class="text-blue-500 underline hover:no-underline">Compel</a> syntax.
+                <a href="https://github.com/damian0815/compel/blob/main/doc/syntax.md" target="_blank"
+                    class="text-blue-500 underline hover:no-underline">Compel</a> syntax.
             </p>
             <div class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
                 <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1  outline-none"

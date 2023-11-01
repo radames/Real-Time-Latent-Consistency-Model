@@ -141,6 +141,7 @@
             } catch (err) {
                 console.log(err);
                 toggleMessage("error")
+                startBtn.disabled = false;
             }
         });
         stopBtn.addEventListener("click", () => {
