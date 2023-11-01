@@ -113,6 +113,7 @@
         }
         function toggleMessage(type) {
             errorEl.hidden = false;
+            errorEl.scrollIntoView();
             switch (type) {
                 case "error":
                     errorEl.innerText = "To many users are using the same GPU, please try again later.";
