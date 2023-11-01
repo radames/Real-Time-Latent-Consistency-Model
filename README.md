@@ -1,6 +1,6 @@
 ---
-title: Real-Time Latent Consistency Model
-emoji: 🔥
+title: Real-Time Latent Consistency Model Image-to-Image
+emoji: 🖼️🖼️
 colorFrom: gray
 colorTo: indigo
 sdk: docker
