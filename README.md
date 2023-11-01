@@ -17,37 +17,42 @@ You need a webcam to run this demo. 🤗
 
 You need CUDA and Python  
 `TIMEOUT`: limit user session timeout
-`SAFETY_CHECKER`:  disabled if you want NSFW filter off  
+`SAFETY_CHECKER`: disabled if you want NSFW filter off  
 `MAX_QUEUE_SIZE`: limit number of users on current app instance
 
 ### image to image
+
 ```bash
-python -m venv venv 
-source venv/bin/activate 
-pip install -r requirements.txt
+python -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
 
 ### text to image
 
 ```bash
-python -m venv venv 
-source venv/bin/activate 
-pip install -r requirements.txt
+python -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
 uvicorn "app-txt2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
+
 or with environment variables
+
 ```bash
 TIMEOUT=120 SAFETY_CHECKER=True MAX_QUEUE_SIZE=4 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
 
-If you're running locally and want to test it on Mobile Safari, the webserver needs to be served over HTTPS. 
+If you're running locally and want to test it on Mobile Safari, the webserver needs to be served over HTTPS.
 
 ```bash
 openssl req -newkey rsa:4096 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload --log-level info --ssl-certfile=certificate.pem --ssl-keyfile=key.pem
 ```
+
 ## Docker
+
 You need NVIDIA Container Toolkit for Docker
 
 ```bash
@@ -62,8 +67,7 @@ docker run -ti -e TIMEOUT=0 -e SAFETY_CHECKER=False -p 7860:7860 --gpus all lcm-
 ```
 
 # Demo on Hugging Face
+
 https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model
 
-
 https://github.com/radames/Real-Time-Latent-Consistency-Model/assets/102277/c4003ac5-e7ff-44c0-97d3-464bb659de70
-

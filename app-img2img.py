@@ -19,6 +19,8 @@ import io
 import uuid
 import os
 import time
+import psutil
+
 
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
@@ -27,6 +29,17 @@ SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 print(f"TIMEOUT: {TIMEOUT}")
 print(f"SAFETY_CHECKER: {SAFETY_CHECKER}")
 print(f"MAX_QUEUE_SIZE: {MAX_QUEUE_SIZE}")
+
+# check if MPS is available OSX only M1/M2/M3 chips
+mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch_device = device
+torch_dtype = torch.float16
+
+if mps_available:
+    device = torch.device("mps")
+    torch_device = "cpu"
+    torch_dtype = torch.float32
 
 if SAFETY_CHECKER == "True":
     pipe = DiffusionPipeline.from_pretrained(
@@ -41,19 +54,28 @@ else:
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
     )
-#TODO try to use tiny VAE
+# TODO try to use tiny VAE
 # pipe.vae = AutoencoderTiny.from_pretrained(
 #     "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
 # )
 pipe.set_progress_bar_config(disable=True)
-pipe.to(torch_device="cuda", torch_dtype=torch.float16)
+pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
 pipe.unet.to(memory_format=torch.channels_last)
-pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-compel_proc = Compel(tokenizer=pipe.tokenizer, text_encoder=pipe.text_encoder, truncate_long_prompts=False)
+
+if psutil.virtual_memory().total < 64 * 1024**3:
+    pipe.enable_attention_slicing()
+
+if not mps_available:
+    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
+
+compel_proc = Compel(
+    tokenizer=pipe.tokenizer,
+    text_encoder=pipe.text_encoder,
+    truncate_long_prompts=False,
+)
 user_queue_map = {}
 
-# for torch.compile
-pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
 
 def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232):
     generator = torch.manual_seed(seed)
@@ -112,9 +134,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_json(
             {"status": "success", "message": "Connected", "userId": uid}
         )
-        user_queue_map[uid] = {
-            "queue": asyncio.Queue()
-        }
+        user_queue_map[uid] = {"queue": asyncio.Queue()}
         await websocket.send_json(
             {"status": "start", "message": "Start Streaming", "userId": uid}
         )
@@ -155,7 +175,13 @@ async def stream(user_id: uuid.UUID):
                 if input_image is None:
                     continue
 
-                image = predict(input_image, params.prompt, params.guidance_scale, params.strength, params.seed)
+                image = predict(
+                    input_image,
+                    params.prompt,
+                    params.guidance_scale,
+                    params.strength,
+                    params.seed,
+                )
                 if image is None:
                     continue
                 frame_data = io.BytesIO()
@@ -194,10 +220,7 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
                     queue.get_nowait()
                 except asyncio.QueueEmpty:
                     continue
-            await queue.put({
-                "image": pil_image,
-                "params": params
-            })
+            await queue.put({"image": pil_image, "params": params})
             if TIMEOUT > 0 and time.time() - last_time > TIMEOUT:
                 await websocket.send_json(
                     {

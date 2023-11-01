@@ -19,6 +19,8 @@ import io
 import uuid
 import os
 import time
+import psutil
+
 
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
@@ -27,6 +29,17 @@ SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 print(f"TIMEOUT: {TIMEOUT}")
 print(f"SAFETY_CHECKER: {SAFETY_CHECKER}")
 print(f"MAX_QUEUE_SIZE: {MAX_QUEUE_SIZE}")
+
+# check if MPS is available OSX only M1/M2/M3 chips
+mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch_device = device
+torch_dtype = torch.float16
+
+if mps_available:
+    device = torch.device("mps")
+    torch_device = "cpu"
+    torch_dtype = torch.float32
 
 if SAFETY_CHECKER == "True":
     pipe = DiffusionPipeline.from_pretrained(
@@ -42,17 +55,27 @@ else:
         custom_revision="main",
     )
 pipe.vae = AutoencoderTiny.from_pretrained(
-    "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
+    "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
 )
 pipe.set_progress_bar_config(disable=True)
-pipe.to(torch_device="cuda", torch_dtype=torch.float16)
+pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
 pipe.unet.to(memory_format=torch.channels_last)
-compel_proc = Compel(tokenizer=pipe.tokenizer, text_encoder=pipe.text_encoder, truncate_long_prompts=False)
-pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+
+# check if computer has less than 64GB of RAM using sys or os
+if psutil.virtual_memory().total < 64 * 1024**3:
+    pipe.enable_attention_slicing()
+
+if not mps_available:
+    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
+
+compel_proc = Compel(
+    tokenizer=pipe.tokenizer,
+    text_encoder=pipe.text_encoder,
+    truncate_long_prompts=False,
+)
 user_queue_map = {}
 
-# warmup trigger compilation
-pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
 def predict(prompt, guidance_scale=8.0, seed=2159232):
     generator = torch.manual_seed(seed)
@@ -148,7 +171,7 @@ async def stream(user_id: uuid.UUID):
                 params = await queue.get()
                 if params is None:
                     continue
-                
+
                 image = predict(params.prompt, params.guidance_scale, params.seed)
                 if image is None:
                     continue
