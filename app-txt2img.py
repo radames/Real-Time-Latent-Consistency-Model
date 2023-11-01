@@ -26,15 +26,16 @@ MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 
-print(f"TIMEOUT: {TIMEOUT}")
-print(f"SAFETY_CHECKER: {SAFETY_CHECKER}")
-print(f"MAX_QUEUE_SIZE: {MAX_QUEUE_SIZE}")
-
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch_device = device
 torch_dtype = torch.float16
+
+print(f"TIMEOUT: {TIMEOUT}")
+print(f"SAFETY_CHECKER: {SAFETY_CHECKER}")
+print(f"MAX_QUEUE_SIZE: {MAX_QUEUE_SIZE}")
+print(f"device: {device}")
 
 if mps_available:
     device = torch.device("mps")
