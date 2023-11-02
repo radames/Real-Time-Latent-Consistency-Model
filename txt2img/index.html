@@ -9,6 +9,11 @@
         src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.1/iframeResizer.contentWindow.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+        .button {
+          @apply bg-gray-700 hover:bg-gray-800 text-white font-normal p-2 rounded disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:disabled:text-black
+        }
+    </style>
     <script type="module">
 
         const seedEl = document.querySelector("#seed");
@@ -177,9 +182,9 @@
     </script>
 </head>
 
-<body>
+<body class="text-black dark:bg-gray-900 dark:text-white">
     <div class="fixed right-2 top-2 p-4 font-bold text-sm rounded-lg max-w-xs text-center" id="error">
-    </div>
+    </div>  
     <main class="container mx-auto px-4 py-4 max-w-4xl flex flex-col gap-4">
         <article class="text-center max-w-xl mx-auto">
             <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
@@ -203,14 +208,14 @@
         </article>
         <div>
             <h2 class="font-medium">Prompt</h2>
-            <p class="text-sm text-gray-500">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
                 Start your session and type your prompt here, accepts
                 <a href="https://github.com/damian0815/compel/blob/main/doc/syntax.md" target="_blank"
                     class="text-blue-500 underline hover:no-underline">Compel</a> syntax.
             </p>
             <div class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
-                <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1  outline-none"
-                    title="Start your session and type your prompt here, you can see the result in real-time."
+                <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1  outline-none dark:text-black"
+                    title=" Start your session and type your prompt here, you can see the result in real-time."
                     placeholder="Add your prompt here...">Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5, cinematic, masterpiece</textarea>
             </div>
 
@@ -227,26 +232,23 @@
                         8.0</output>
                     <label class="text-sm font-medium" for="seed">Seed</label>
                     <input type="number" id="seed" name="seed" value="299792458"
-                        class="font-light border border-gray-700 text-right rounded-md p-2">
+                        class="font-light border border-gray-700 text-right rounded-md p-2 dark:text-black">
                     <button
                         onclick="document.querySelector('#seed').value = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER); document.querySelector('#seed').dispatchEvent(new Event('input'));"
-                        class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-1 w-[50px] rounded disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                        class="button">
                         Rand
                     </button>
                 </div>
             </details>
         </div>
         <div class="flex gap-3">
-            <button id="start"
-                class="bg-gray-700 hover:bg-gray-800 text-white font-normal p-2 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+            <button id="start" class="button">
                 Start
             </button>
-            <button id="stop"
-                class="bg-gray-700 hover:bg-gray-800 text-white font-normal p-2 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
+            <button id="stop" class="button">
                 Stop
             </button>
-            <button id="snap" disabled
-                class="bg-gray-700 hover:bg-gray-800 text-white font-normal p-2  rounded disabled:bg-gray-300 disabled:cursor-not-allowed ml-auto">
+            <button id="snap" disabled class="button ml-auto">
                 Snapshot
             </button>
         </div>
