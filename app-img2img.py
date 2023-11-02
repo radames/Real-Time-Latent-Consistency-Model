@@ -21,10 +21,11 @@ import os
 import time
 import psutil
 
-
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
+WIDTH = 512
+HEIGHT = 512
 
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
@@ -56,7 +57,7 @@ else:
         custom_revision="main",
     )
 pipe.vae = AutoencoderTiny.from_pretrained(
-    "madebyollin/taesd", torch_dtype=torch.float16, use_safetensors=True
+    "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
 )
 pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
@@ -77,18 +78,29 @@ compel_proc = Compel(
 user_queue_map = {}
 
 
-def predict(input_image, prompt, guidance_scale=8.0, strength=0.5, seed=2159232):
-    generator = torch.manual_seed(seed)
-    prompt_embeds = compel_proc(prompt)
+class InputParams(BaseModel):
+    prompt: str
+    seed: int = 2159232
+    guidance_scale: float = 8.0
+    strength: float = 0.5
+    width: int = WIDTH
+    height: int = HEIGHT
+
+
+def predict(input_image: Image.Image, params: InputParams):
+    generator = torch.manual_seed(params.seed)
+    prompt_embeds = compel_proc(params.prompt)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
     num_inference_steps = 3
     results = pipe(
         prompt_embeds=prompt_embeds,
         generator=generator,
         image=input_image,
-        strength=strength,
+        strength=params.strength,
         num_inference_steps=num_inference_steps,
-        guidance_scale=guidance_scale,
+        guidance_scale=params.guidance_scale,
+        width=params.width,
+        height=params.height,
         lcm_origin_steps=50,
         output_type="pil",
     )
@@ -110,13 +122,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-class InputParams(BaseModel):
-    seed: int
-    prompt: str
-    strength: float
-    guidance_scale: float
 
 
 @app.websocket("/ws")
@@ -177,10 +182,7 @@ async def stream(user_id: uuid.UUID):
 
                 image = predict(
                     input_image,
-                    params.prompt,
-                    params.guidance_scale,
-                    params.strength,
-                    params.seed,
+                    params,
                 )
                 if image is None:
                     continue

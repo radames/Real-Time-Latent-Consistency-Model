@@ -25,7 +25,8 @@ import psutil
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
-
+WIDTH = 512
+HEIGHT = 512
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -66,9 +67,9 @@ pipe.unet.to(memory_format=torch.channels_last)
 if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
-if not mps_available:
-    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-    pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
+# if not mps_available:
+#     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+#     pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
 compel_proc = Compel(
     tokenizer=pipe.tokenizer,
@@ -77,17 +78,25 @@ compel_proc = Compel(
 )
 user_queue_map = {}
 
+class InputParams(BaseModel):
+    prompt: str
+    seed: int = 2159232
+    guidance_scale: float = 8.0
+    width: int = WIDTH
+    height: int = HEIGHT
 
-def predict(prompt, guidance_scale=8.0, seed=2159232):
-    generator = torch.manual_seed(seed)
-    prompt_embeds = compel_proc(prompt)
+def predict(params: InputParams):
+    generator = torch.manual_seed(params.seed)
+    prompt_embeds = compel_proc(params.prompt)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
     num_inference_steps = 8
     results = pipe(
         prompt_embeds=prompt_embeds,
         generator=generator,
         num_inference_steps=num_inference_steps,
-        guidance_scale=guidance_scale,
+        guidance_scale=params.guidance_scale,
+        width=params.width,
+        height=params.height,
         lcm_origin_steps=50,
         output_type="pil",
     )
@@ -109,13 +118,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-class InputParams(BaseModel):
-    prompt: str
-    seed: int
-    guidance_scale: float
-
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -173,7 +175,7 @@ async def stream(user_id: uuid.UUID):
                 if params is None:
                     continue
 
-                image = predict(params.prompt, params.guidance_scale, params.seed)
+                image = predict(params)
                 if image is None:
                     continue
                 frame_data = io.BytesIO()
