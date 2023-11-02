@@ -31,7 +31,8 @@ HEIGHT = 512
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch_device = device
-torch_dtype = torch.float16
+# change to torch.float16 to save GPU memory
+torch_dtype = torch.float32
 
 print(f"TIMEOUT: {TIMEOUT}")
 print(f"SAFETY_CHECKER: {SAFETY_CHECKER}")
