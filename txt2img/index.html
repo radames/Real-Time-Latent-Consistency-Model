@@ -71,6 +71,7 @@
 
             async function promptUpdateStream() {
                 const prompt = promptEl.value;
+                console.log(prompt);
                 const seed = seedEl.value;
                 const guidance_scale = guidanceEl.value;
                 websocket.send(JSON.stringify({
@@ -79,19 +80,28 @@
                     guidance_scale: guidance_scale,
                 }));
             }
-
+            function debouceInput(fn, delay) {
+                let timer;
+                return function (...args) {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => {
+                        fn(...args);
+                    }, delay);
+                }
+            }
+            const debouncedInput = debouceInput(promptUpdateStream, 200);
             function initPromptStream(userId) {
                 liveImage.src = `/stream/${userId}`;
-                promptEl.addEventListener("input", promptUpdateStream);
-                seedEl.addEventListener("input", promptUpdateStream);
-                guidanceEl.addEventListener("change", promptUpdateStream);
+                promptEl.addEventListener("input", debouncedInput);
+                seedEl.addEventListener("input", debouncedInput);
+                guidanceEl.addEventListener("change", debouncedInput);
             }
 
             async function stop() {
                 websocket.close();
-                promptEl.removeEventListener("input", promptUpdateStream);
-                seedEl.removeEventListener("input", promptUpdateStream);
-                guidanceEl.removeEventListener("change", promptUpdateStream);
+                promptEl.removeEventListener("input",  debouncedInput);
+                seedEl.removeEventListener("input", debouncedInput);
+                guidanceEl.removeEventListener("change", debouncedInput);
             }
             return {
                 start,
