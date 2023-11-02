@@ -26,6 +26,8 @@ TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 WIDTH = 512
 HEIGHT = 512
+# disable tiny autoencoder for better quality speed tradeoff
+USE_TINY_AUTOENCODER=True
 
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
@@ -58,9 +60,11 @@ else:
         custom_pipeline="latent_consistency_img2img.py",
         custom_revision="main",
     )
-pipe.vae = AutoencoderTiny.from_pretrained(
-    "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
-)
+
+if USE_TINY_AUTOENCODER:
+    pipe.vae = AutoencoderTiny.from_pretrained(
+        "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
+    )
 pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
 pipe.unet.to(memory_format=torch.channels_last)
@@ -89,9 +93,8 @@ class InputParams(BaseModel):
     height: int = HEIGHT
 
 
-def predict(input_image: Image.Image, params: InputParams):
+def predict(input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None):
     generator = torch.manual_seed(params.seed)
-    prompt_embeds = compel_proc(params.prompt)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
     num_inference_steps = 3
     results = pipe(
@@ -173,18 +176,25 @@ async def stream(user_id: uuid.UUID):
     try:
         user_queue = user_queue_map[uid]
         queue = user_queue["queue"]
-
         async def generate():
+            last_prompt: str = None
+            prompt_embeds: torch.Tensor = None
             while True:
                 data = await queue.get()
                 input_image = data["image"]
                 params = data["params"]
                 if input_image is None:
                     continue
+                # avoid recalculate prompt embeds
+                if last_prompt != params.prompt:
+                    print("new prompt")
+                    prompt_embeds = compel_proc(params.prompt)
+                    last_prompt = params.prompt
 
                 image = predict(
                     input_image,
                     params,
+                    prompt_embeds,
                 )
                 if image is None:
                     continue

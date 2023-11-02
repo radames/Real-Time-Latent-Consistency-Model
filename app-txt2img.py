@@ -27,6 +27,9 @@ TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 WIDTH = 512
 HEIGHT = 512
+# disable tiny autoencoder for better quality speed tradeoff
+USE_TINY_AUTOENCODER=True
+
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -57,9 +60,10 @@ else:
         custom_pipeline="latent_consistency_txt2img.py",
         custom_revision="main",
     )
-pipe.vae = AutoencoderTiny.from_pretrained(
-    "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
-)
+if USE_TINY_AUTOENCODER:
+    pipe.vae = AutoencoderTiny.from_pretrained(
+        "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
+    )
 pipe.set_progress_bar_config(disable=True)
 pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
 pipe.unet.to(memory_format=torch.channels_last)
@@ -68,9 +72,9 @@ pipe.unet.to(memory_format=torch.channels_last)
 if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
-# if not mps_available:
-#     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-#     pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
+if not mps_available:
+    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
 compel_proc = Compel(
     tokenizer=pipe.tokenizer,
