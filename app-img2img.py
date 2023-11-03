@@ -12,6 +12,10 @@ from fastapi.staticfiles import StaticFiles
 from diffusers import DiffusionPipeline, AutoencoderTiny
 from compel import Compel
 import torch
+try:
+    import intel_extension_for_pytorch as ipex
+except:
+    pass
 from PIL import Image
 import numpy as np
 import gradio as gr
@@ -31,7 +35,8 @@ USE_TINY_AUTOENCODER=True
 
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+xpu_available = hasattr(torch, 'xpu') and torch.xpu.is_available()
+device = torch.device("cuda" if torch.cuda.is_available() else "xpu" if xpu_available else "cpu")
 torch_device = device
 
 # change to torch.float16 to save GPU memory
@@ -72,7 +77,7 @@ pipe.unet.to(memory_format=torch.channels_last)
 if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
-if not mps_available:
+if not mps_available and not xpu_available:
     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
     pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
 
