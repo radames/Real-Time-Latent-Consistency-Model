@@ -9,9 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from diffusers import DiffusionPipeline, AutoencoderTiny
+from diffusers import AutoPipelineForImage2Image, AutoencoderTiny
 from compel import Compel
 import torch
+
 try:
     import intel_extension_for_pytorch as ipex
 except:
@@ -31,12 +32,14 @@ SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 WIDTH = 512
 HEIGHT = 512
 # disable tiny autoencoder for better quality speed tradeoff
-USE_TINY_AUTOENCODER=True
+USE_TINY_AUTOENCODER = True
 
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
-xpu_available = hasattr(torch, 'xpu') and torch.xpu.is_available()
-device = torch.device("cuda" if torch.cuda.is_available() else "xpu" if xpu_available else "cpu")
+xpu_available = hasattr(torch, "xpu") and torch.xpu.is_available()
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "xpu" if xpu_available else "cpu"
+)
 torch_device = device
 
 # change to torch.float16 to save GPU memory
@@ -53,17 +56,13 @@ if mps_available:
     torch_dtype = torch.float32
 
 if SAFETY_CHECKER == "True":
-    pipe = DiffusionPipeline.from_pretrained(
+    pipe = AutoPipelineForImage2Image.from_pretrained(
         "SimianLuo/LCM_Dreamshaper_v7",
-        custom_pipeline="latent_consistency_img2img.py",
-        custom_revision="main",
     )
 else:
-    pipe = DiffusionPipeline.from_pretrained(
+    pipe = AutoPipelineForImage2Image.from_pretrained(
         "SimianLuo/LCM_Dreamshaper_v7",
         safety_checker=None,
-        custom_pipeline="latent_consistency_img2img.py",
-        custom_revision="main",
     )
 
 if USE_TINY_AUTOENCODER:
@@ -71,7 +70,7 @@ if USE_TINY_AUTOENCODER:
         "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
     )
 pipe.set_progress_bar_config(disable=True)
-pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
+pipe.to(device=torch_device, dtype=torch_dtype).to(device)
 pipe.unet.to(memory_format=torch.channels_last)
 
 if psutil.virtual_memory().total < 64 * 1024**3:
@@ -98,7 +97,9 @@ class InputParams(BaseModel):
     height: int = HEIGHT
 
 
-def predict(input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None):
+def predict(
+    input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None
+):
     generator = torch.manual_seed(params.seed)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
     num_inference_steps = 3
@@ -111,7 +112,7 @@ def predict(input_image: Image.Image, params: InputParams, prompt_embeds: torch.
         guidance_scale=params.guidance_scale,
         width=params.width,
         height=params.height,
-        lcm_origin_steps=50,
+        original_inference_steps=50,
         output_type="pil",
     )
     nsfw_content_detected = (
@@ -181,6 +182,7 @@ async def stream(user_id: uuid.UUID):
     try:
         user_queue = user_queue_map[uid]
         queue = user_queue["queue"]
+
         async def generate():
             last_prompt: str = None
             prompt_embeds: torch.Tensor = None

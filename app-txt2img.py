@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from diffusers import DiffusionPipeline, AutoencoderTiny
 from compel import Compel
 import torch
+
 try:
     import intel_extension_for_pytorch as ipex
 except:
@@ -29,15 +30,17 @@ import psutil
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
-WIDTH = 512
-HEIGHT = 512
+WIDTH = 768
+HEIGHT = 768
 # disable tiny autoencoder for better quality speed tradeoff
-USE_TINY_AUTOENCODER=True
+USE_TINY_AUTOENCODER = False
 
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
-xpu_available = hasattr(torch, 'xpu') and torch.xpu.is_available()
-device = torch.device("cuda" if torch.cuda.is_available() else "xpu" if xpu_available else "cpu")
+xpu_available = hasattr(torch, "xpu") and torch.xpu.is_available()
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "xpu" if xpu_available else "cpu"
+)
 torch_device = device
 # change to torch.float16 to save GPU memory
 torch_dtype = torch.float32
@@ -55,22 +58,18 @@ if mps_available:
 if SAFETY_CHECKER == "True":
     pipe = DiffusionPipeline.from_pretrained(
         "SimianLuo/LCM_Dreamshaper_v7",
-        custom_pipeline="latent_consistency_txt2img.py",
-        custom_revision="main",
     )
 else:
     pipe = DiffusionPipeline.from_pretrained(
         "SimianLuo/LCM_Dreamshaper_v7",
         safety_checker=None,
-        custom_pipeline="latent_consistency_txt2img.py",
-        custom_revision="main",
     )
 if USE_TINY_AUTOENCODER:
     pipe.vae = AutoencoderTiny.from_pretrained(
         "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
     )
 pipe.set_progress_bar_config(disable=True)
-pipe.to(torch_device=torch_device, torch_dtype=torch_dtype).to(device)
+pipe.to(device=torch_device, dtype=torch_dtype).to(device)
 pipe.unet.to(memory_format=torch.channels_last)
 
 # check if computer has less than 64GB of RAM using sys or os
@@ -88,12 +87,14 @@ compel_proc = Compel(
 )
 user_queue_map = {}
 
+
 class InputParams(BaseModel):
     prompt: str
     seed: int = 2159232
     guidance_scale: float = 8.0
     width: int = WIDTH
     height: int = HEIGHT
+
 
 def predict(params: InputParams):
     generator = torch.manual_seed(params.seed)
@@ -107,7 +108,7 @@ def predict(params: InputParams):
         guidance_scale=params.guidance_scale,
         width=params.width,
         height=params.height,
-        lcm_origin_steps=50,
+        original_inference_steps=50,
         output_type="pil",
     )
     nsfw_content_detected = (
@@ -128,6 +129,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
