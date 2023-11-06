@@ -100,7 +100,7 @@ def predict(params: InputParams):
     generator = torch.manual_seed(params.seed)
     prompt_embeds = compel_proc(params.prompt)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
-    num_inference_steps = 8
+    num_inference_steps = 4
     results = pipe(
         prompt_embeds=prompt_embeds,
         generator=generator,
