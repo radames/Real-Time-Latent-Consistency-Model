@@ -15,7 +15,6 @@
         }
     </style>
     <script type="module">
-        // you can change the size of the input image to 768x768 if you have a powerful GPU
         const getValue = (id) => {
             const el = document.querySelector(`${id}`)
             if (el.type === "checkbox")
@@ -76,7 +75,7 @@
             function switchCamera() {
                 const constraints = {
                     audio: false,
-                    video: { width: 1024, height: 768, deviceId: mediaDevices[webcamsEl.value].deviceId }
+                    video: { width: 1024, height: 1024, deviceId: mediaDevices[webcamsEl.value].deviceId }
                 };
                 navigator.mediaDevices
                     .getUserMedia(constraints)
@@ -145,7 +144,7 @@
                     });
                 const constraints = {
                     audio: false,
-                    video: { width: 1024, height: 768, deviceId: mediaDevices[0].deviceId }
+                    video: { width: 1024, height: 1024, deviceId: mediaDevices[0].deviceId }
                 };
                 navigator.mediaDevices
                     .getUserMedia(constraints)
@@ -351,17 +350,17 @@
                     <!--  -->
                     <label class="text-sm font-medium" for="canny_low_threshold">Canny Low Threshold</label>
                     <input type="range" id="canny_low_threshold" name="canny_low_threshold" min="0.0" max="1.0"
+                        step="0.001" value="0.1"
+                        oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        0.1</output>
+                    <!--  -->
+                    <label class="text-sm font-medium" for="canny_high_threshold">Canny High Threshold</label>
+                    <input type="range" id="canny_high_threshold" name="canny_high_threshold" min="0.0" max="1.0"
                         step="0.001" value="0.2"
                         oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                         0.2</output>
-                    <!--  -->
-                    <label class="text-sm font-medium" for="canny_high_threshold">Canny High Threshold</label>
-                    <input type="range" id="canny_high_threshold" name="canny_high_threshold" min="0.0" max="1.0"
-                        step="0.001" value="0.8"
-                        oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
-                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
-                        0.8</output>
                     <!--  -->
                     <label class="text-sm font-medium" for="seed">Seed</label>
                     <input type="number" id="seed" name="seed" value="299792458"

@@ -160,7 +160,7 @@ def predict(
     result_image = results.images[0]
     if params.debug_canny:
         # paste control_image on top of result_image
-        w0, h0 = (128, 128)
+        w0, h0 = (200, 200)
         control_image = control_image.resize((w0, h0))
         w1, h1 = result_image.size
         result_image.paste(control_image, (w1 - w0, h1 - h0))
