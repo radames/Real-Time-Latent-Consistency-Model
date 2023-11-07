@@ -126,6 +126,7 @@ class InputParams(BaseModel):
     controlnet_end: float = 1.0
     canny_low_threshold: float = 0.31
     canny_high_threshold: float = 0.78
+    debug_canny: bool = False
 
 def predict(
     input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None
@@ -133,7 +134,6 @@ def predict(
     generator = torch.manual_seed(params.seed)
     
     control_image = canny_torch(input_image, params.canny_low_threshold, params.canny_high_threshold)
-    print(params.canny_low_threshold, params.canny_high_threshold)
     results = pipe(
         control_image=control_image,
         prompt_embeds=prompt_embeds,
@@ -157,7 +157,15 @@ def predict(
     )
     if nsfw_content_detected:
         return None
-    return results.images[0]
+    result_image = results.images[0]
+    if params.debug_canny:
+        # paste control_image on top of result_image
+        w0, h0 = (128, 128)
+        control_image = control_image.resize((w0, h0))
+        w1, h1 = result_image.size
+        result_image.paste(control_image, (w1 - w0, h1 - h0))
+
+    return result_image
 
 
 app = FastAPI()

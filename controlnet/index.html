@@ -16,7 +16,12 @@
     </style>
     <script type="module">
         // you can change the size of the input image to 768x768 if you have a powerful GPU
-        const getValue = (id) => document.querySelector(`${id}`).value;
+        const getValue = (id) => {
+            const el = document.querySelector(`${id}`)
+            if (el.type === "checkbox")
+                return el.checked;
+            return el.value;
+        }
         const startBtn = document.querySelector("#start");
         const stopBtn = document.querySelector("#stop");
         const videoEl = document.querySelector("#webcam");
@@ -115,6 +120,7 @@
                     "controlnet_end": getValue("#controlnet_end"),
                     "canny_low_threshold": getValue("#canny_low_threshold"),
                     "canny_high_threshold": getValue("#canny_high_threshold"),
+                    "debug_canny": getValue("#debug_canny")
                 }));
             }
             let mediaDevices = [];
@@ -380,6 +386,14 @@
                             <label for="dimension768" class="text-sm cursor-pointer">768x768</label>
                         </div>
                     </div>
+                    <!--  -->
+                    <!--  -->
+                    <label class="text-sm font-medium" for="debug_canny">Debug Canny</label>
+                    <div class="col-span-2 flex gap-2">
+                        <input type="checkbox" id="debug_canny" name="debug_canny" class="cursor-pointer">
+                        <label for="debug_canny" class="text-sm cursor-pointer"></label>
+                    </div>
+                    <div></div>
                     <!--  -->
                 </div>
             </details>
