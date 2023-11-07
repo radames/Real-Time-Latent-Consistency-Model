@@ -15,13 +15,13 @@
         }
     </style>
     <script type="module">
-        // you can change the size of the input image to 768x768 if you have a powerful GPU
-        const WIDTH = 512;
-        const HEIGHT = 512;
-        const seedEl = document.querySelector("#seed");
-        const promptEl = document.querySelector("#prompt");
-        const guidanceEl = document.querySelector("#guidance-scale");
-        const strengthEl = document.querySelector("#strength");
+        const getValue = (id) => {
+            const el = document.querySelector(`${id}`)
+            if (el.type === "checkbox")
+                return el.checked;
+            return el.value;
+        }
+
         const startBtn = document.querySelector("#start");
         const stopBtn = document.querySelector("#stop");
         const videoEl = document.querySelector("#webcam");
@@ -29,8 +29,9 @@
         const queueSizeEl = document.querySelector("#queue_size");
         const errorEl = document.querySelector("#error");
         const snapBtn = document.querySelector("#snap");
+        const webcamsEl = document.querySelector("#webcams");
 
-        function LCMLive(webcamVideo, liveImage, seedEl, promptEl, guidanceEl, strengthEl) {
+        function LCMLive(webcamVideo, liveImage) {
             let websocket;
 
             async function start() {
@@ -72,30 +73,73 @@
                     websocket = socket;
                 })
             }
+            function switchCamera() {
+                const constraints = {
+                    audio: false,
+                    video: { width: 1024, height: 1024, deviceId: mediaDevices[webcamsEl.value].deviceId }
+                };
+                navigator.mediaDevices
+                    .getUserMedia(constraints)
+                    .then((mediaStream) => {
+                        webcamVideo.removeEventListener("timeupdate", videoTimeUpdateHandler);
+                        webcamVideo.srcObject = mediaStream;
+                        webcamVideo.onloadedmetadata = () => {
+                            webcamVideo.play();
+                            webcamVideo.addEventListener("timeupdate", videoTimeUpdateHandler);
+                        };
+                    })
+                    .catch((err) => {
+                        console.error(`${err.name}: ${err.message}`);
+                    });
+            }
 
             async function videoTimeUpdateHandler() {
+                const dimension = getValue("input[name=dimension]:checked");
+                const [WIDTH, HEIGHT] = JSON.parse(dimension);
+
                 const canvas = new OffscreenCanvas(WIDTH, HEIGHT);
                 const videoW = webcamVideo.videoWidth;
                 const videoH = webcamVideo.videoHeight;
+                const aspectRatio = WIDTH / HEIGHT;
 
                 const ctx = canvas.getContext("2d");
-                // grap square from center
-                ctx.drawImage(webcamVideo, videoW / 2 - WIDTH / 2, videoH / 2 - HEIGHT / 2, WIDTH, HEIGHT, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(webcamVideo, videoW / 2 - videoH * aspectRatio / 2, 0, videoH * aspectRatio, videoH, 0, 0, WIDTH, HEIGHT)
                 const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 1 });
                 websocket.send(blob);
                 websocket.send(JSON.stringify({
-                    "seed": seedEl.value,
-                    "prompt": promptEl.value,
-                    "guidance_scale": guidanceEl.value,
-                    "strength": strengthEl.value
+                    "seed": getValue("#seed"),
+                    "prompt": getValue("#prompt"),
+                    "guidance_scale": getValue("#guidance-scale"),
+                    "strength": getValue("#strength"),
+                    "steps": getValue("#steps"),
+                    "lcm_steps": getValue("#lcm_steps"),
+                    "width": WIDTH,
+                    "height": HEIGHT,
                 }));
             }
-
-            function initVideoStream(userId) {
+            let mediaDevices = [];
+            async function initVideoStream(userId) {
                 liveImage.src = `/stream/${userId}`;
+                await navigator.mediaDevices.enumerateDevices()
+                    .then(devices => {
+                        const cameras = devices.filter(device => device.kind === 'videoinput');
+                        mediaDevices = cameras;
+                        webcamsEl.innerHTML = "";
+                        cameras.forEach((camera, index) => {
+                            const option = document.createElement("option");
+                            option.value = index;
+                            option.innerText = camera.label;
+                            webcamsEl.appendChild(option);
+                            option.selected = index === 0;
+                        });
+                        webcamsEl.addEventListener("change", switchCamera);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    });
                 const constraints = {
                     audio: false,
-                    video: { width: WIDTH, height: HEIGHT },
+                    video: { width: 1024, height: 1024, deviceId: mediaDevices[0].deviceId }
                 };
                 navigator.mediaDevices
                     .getUserMedia(constraints)
@@ -117,6 +161,7 @@
                     mediaStream.getTracks().forEach((track) => track.stop());
                 });
                 webcamVideo.removeEventListener("timeupdate", videoTimeUpdateHandler);
+                webcamsEl.removeEventListener("change", switchCamera);
                 webcamVideo.srcObject = null;
             }
             return {
@@ -147,7 +192,7 @@
                 const exif = {};
                 const gps = {};
                 zeroth[piexif.ImageIFD.Make] = "LCM Image-to-Image";
-                zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${promptEl.value} | seed: ${seedEl.value} | guidance_scale: ${guidanceEl.value} | strength: ${strengthEl.value}`;
+                zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${getValue("#prompt")} | seed: ${getValue("#seed")} | guidance_scale: ${getValue("#guidance-scale")} | strength: ${getValue("#strength")} | lcm_steps: ${getValue("#lcm_steps")} | steps: ${getValue("#steps")}`;
                 zeroth[piexif.ImageIFD.Software] = "https://github.com/radames/Real-Time-Latent-Consistency-Model";
 
                 exif[piexif.ExifIFD.DateTimeOriginal] = new Date().toISOString();
@@ -173,7 +218,7 @@
         }
 
 
-        const lcmLive = LCMLive(videoEl, imageEl, seedEl, promptEl, guidanceEl, strengthEl);
+        const lcmLive = LCMLive(videoEl, imageEl);
         startBtn.addEventListener("click", async () => {
             try {
                 startBtn.disabled = true;
@@ -249,18 +294,38 @@
         <div class="">
             <details>
                 <summary class="font-medium cursor-pointer">Advanced Options</summary>
-                <div class="grid grid-cols-3 max-w-md items-center gap-3 py-3">
+                <div class="grid grid-cols-3 sm:grid-cols-6 items-center gap-3 py-3">
+                    <label for="webcams" class="text-sm font-medium">Camera Options: </label>
+                    <select id="webcams" class="text-sm border-2 border-gray-500 rounded-md font-light dark:text-black">
+                    </select>
+                    <div></div>
+                    <label class="text-sm font-medium " for="steps">Inference Steps
+                    </label>
+                    <input type="range" id="steps" name="steps" min="1" max="20" value="4"
+                        oninput="this.nextElementSibling.value = Number(this.value)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        4</output>
+                    <!--  -->
+                    <label class="text-sm font-medium" for="lcm_steps">LCM Inference Steps
+                    </label>
+                    <input type="range" id="lcm_steps" name="lcm_steps" min="2" max="60" value="50"
+                        oninput="this.nextElementSibling.value = Number(this.value)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        50</output>
+                    <!--  -->
                     <label class="text-sm font-medium" for="guidance-scale">Guidance Scale
                     </label>
-                    <input type="range" id="guidance-scale" name="guidance-scale" min="1" max="30" step="0.001"
+                    <input type="range" id="guidance-scale" name="guidance-scale" min="0" max="30" step="0.001"
                         value="8.0" oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                         8.0</output>
+                    <!--  -->
                     <label class="text-sm font-medium" for="strength">Strength</label>
-                    <input type="range" id="strength" name="strength" min="0.02" max="1" step="0.001" value="0.50"
+                    <input type="range" id="strength" name="strength" min="0.1" max="1" step="0.001" value="0.50"
                         oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                         0.5</output>
+                    <!--  -->
                     <label class="text-sm font-medium" for="seed">Seed</label>
                     <input type="number" id="seed" name="seed" value="299792458"
                         class="font-light border border-gray-700 text-right rounded-md p-2 dark:text-black">
@@ -269,6 +334,22 @@
                         class="button">
                         Rand
                     </button>
+                    <!--  -->
+                    <!--  -->
+                    <label class="text-sm font-medium" for="dimension">Image Dimensions</label>
+                    <div class="col-span-2 flex gap-2">
+                        <div class="flex gap-1">
+                            <input type="radio" id="dimension512" name="dimension" value="[512,512]" checked
+                                class="cursor-pointer">
+                            <label for="dimension512" class="text-sm cursor-pointer">512x512</label>
+                        </div>
+                        <div class="flex gap-1">
+                            <input type="radio" id="dimension768" name="dimension" value="[768,768]"
+                                lass="cursor-pointer">
+                            <label for="dimension768" class="text-sm cursor-pointer">768x768</label>
+                        </div>
+                    </div>
+                    <!--  -->
                 </div>
             </details>
         </div>
