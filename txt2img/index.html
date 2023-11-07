@@ -15,10 +15,12 @@
         }
     </style>
     <script type="module">
-
-        const seedEl = document.querySelector("#seed");
-        const promptEl = document.querySelector("#prompt");
-        const guidanceEl = document.querySelector("#guidance-scale");
+        const getValue = (id) => {
+            const el = document.querySelector(`${id}`)
+            if (el.type === "checkbox")
+                return el.checked;
+            return el.value;
+        }
         const startBtn = document.querySelector("#start");
         const stopBtn = document.querySelector("#stop");
         const videoEl = document.querySelector("#webcam");
@@ -26,8 +28,9 @@
         const queueSizeEl = document.querySelector("#queue_size");
         const errorEl = document.querySelector("#error");
         const snapBtn = document.querySelector("#snap");
-
-        function LCMLive(promptEl, liveImage, seedEl, guidanceEl) {
+        const paramsEl = document.querySelector("#params");
+        paramsEl.addEventListener("submit", (e) => e.preventDefault());
+        function LCMLive(paramsEl, liveImage) {
             let websocket;
 
             async function start() {
@@ -69,15 +72,17 @@
                 })
             }
 
-            async function promptUpdateStream() {
-                const prompt = promptEl.value;
-                console.log(prompt);
-                const seed = seedEl.value;
-                const guidance_scale = guidanceEl.value;
+            async function promptUpdateStream(e) {
+                const dimension = getValue("input[name=dimension]:checked");
+                const [WIDTH, HEIGHT] = JSON.parse(dimension);
                 websocket.send(JSON.stringify({
-                    prompt: prompt,
-                    seed: seed,
-                    guidance_scale: guidance_scale,
+                    "seed": getValue("#seed"),
+                    "prompt": getValue("#prompt"),
+                    "guidance_scale": getValue("#guidance-scale"),
+                    "steps": getValue("#steps"),
+                    "lcm_steps": getValue("#lcm_steps"),
+                    "width": WIDTH,
+                    "height": HEIGHT,
                 }));
             }
             function debouceInput(fn, delay) {
@@ -92,16 +97,12 @@
             const debouncedInput = debouceInput(promptUpdateStream, 200);
             function initPromptStream(userId) {
                 liveImage.src = `/stream/${userId}`;
-                promptEl.addEventListener("input", debouncedInput);
-                seedEl.addEventListener("input", debouncedInput);
-                guidanceEl.addEventListener("change", debouncedInput);
+                paramsEl.addEventListener("change", debouncedInput);
             }
 
             async function stop() {
                 websocket.close();
-                promptEl.removeEventListener("input",  debouncedInput);
-                seedEl.removeEventListener("input", debouncedInput);
-                guidanceEl.removeEventListener("change", debouncedInput);
+                paramsEl.removeEventListener("change", debouncedInput);
             }
             return {
                 start,
@@ -131,7 +132,7 @@
                 const exif = {};
                 const gps = {};
                 zeroth[piexif.ImageIFD.Make] = "LCM Text-to-Image";
-                zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${promptEl.value} | seed: ${seedEl.value} | guidance: ${guidanceEl.value}`;
+                zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${getValue("#prompt")} | seed: ${getValue("#seed")} | guidance_scale: ${getValue("#guidance-scale")} | lcm_steps: ${getValue("#lcm_steps")} | steps: ${getValue("#steps")}`;
                 zeroth[piexif.ImageIFD.Software] = "https://github.com/radames/Real-Time-Latent-Consistency-Model";
 
                 exif[piexif.ExifIFD.DateTimeOriginal] = new Date().toISOString();
@@ -157,7 +158,7 @@
         }
 
 
-        const lcmLive = LCMLive(promptEl, imageEl, seedEl, guidanceEl);
+        const lcmLive = LCMLive(paramsEl, imageEl);
         startBtn.addEventListener("click", async () => {
             try {
                 startBtn.disabled = true;
@@ -233,22 +234,50 @@
         <div class="">
             <details>
                 <summary class="font-medium cursor-pointer">Advanced Options</summary>
-                <div class="grid grid-cols-3 max-w-md items-center gap-3 py-3">
+                <form class="grid grid-cols-3 items-center gap-3 py-3" id="params" action="">
+                    <label class="text-sm font-medium" for="dimension">Image Dimensions</label>
+                    <div class="col-span-2 flex gap-2">
+                        <div class="flex gap-1">
+                            <input type="radio" id="dimension512" name="dimension" value="[512,512]" checked
+                                class="cursor-pointer">
+                            <label for="dimension512" class="text-sm cursor-pointer">512x512</label>
+                        </div>
+                        <div class="flex gap-1">
+                            <input type="radio" id="dimension768" name="dimension" value="[768,768]"
+                                lass="cursor-pointer">
+                            <label for="dimension768" class="text-sm cursor-pointer">768x768</label>
+                        </div>
+                    </div>
+                    <!--  -->
+                    <label class="text-sm font-medium " for="steps">Inference Steps
+                    </label>
+                    <input type="range" id="steps" name="steps" min="1" max="20" value="4"
+                        oninput="this.nextElementSibling.value = Number(this.value)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        4</output>
+                    <!--  -->
+                    <label class="text-sm font-medium" for="lcm_steps">LCM Inference Steps
+                    </label>
+                    <input type="range" id="lcm_steps" name="lcm_steps" min="2" max="60" value="50"
+                        oninput="this.nextElementSibling.value = Number(this.value)">
+                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
+                        50</output>
+                    <!--  -->
                     <label class="text-sm font-medium" for="guidance-scale">Guidance Scale
                     </label>
-                    <input type="range" id="guidance-scale" name="guidance-scale" min="1" max="30" step="0.001"
+                    <input type="range" id="guidance-scale" name="guidance-scale" min="0" max="30" step="0.001"
                         value="8.0" oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                         8.0</output>
+                    <!--  -->
                     <label class="text-sm font-medium" for="seed">Seed</label>
                     <input type="number" id="seed" name="seed" value="299792458"
                         class="font-light border border-gray-700 text-right rounded-md p-2 dark:text-black">
-                    <button
-                        onclick="document.querySelector('#seed').value = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER); document.querySelector('#seed').dispatchEvent(new Event('input'));"
-                        class="button">
+                    <button class="button" onclick="document.querySelector('#seed').value = Math.floor(Math.random() * 1000000000); document.querySelector('#params').dispatchEvent(new Event('change'))">
                         Rand
                     </button>
-                </div>
+                    <!--  -->
+                </form>
             </details>
         </div>
         <div class="flex gap-3">

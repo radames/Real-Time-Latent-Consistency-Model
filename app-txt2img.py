@@ -76,9 +76,9 @@ pipe.unet.to(memory_format=torch.channels_last)
 if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
-if not mps_available and not xpu_available:
-    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-    pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
+# if not mps_available and not xpu_available:
+#     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+#     pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
 compel_proc = Compel(
     tokenizer=pipe.tokenizer,
@@ -89,9 +89,12 @@ user_queue_map = {}
 
 
 class InputParams(BaseModel):
-    prompt: str
     seed: int = 2159232
+    prompt: str
     guidance_scale: float = 8.0
+    strength: float = 0.5
+    steps: int = 4
+    lcm_steps: int = 50
     width: int = WIDTH
     height: int = HEIGHT
 
@@ -100,15 +103,14 @@ def predict(params: InputParams):
     generator = torch.manual_seed(params.seed)
     prompt_embeds = compel_proc(params.prompt)
     # Can be set to 1~50 steps. LCM support fast inference even <= 4 steps. Recommend: 1~8 steps.
-    num_inference_steps = 4
     results = pipe(
         prompt_embeds=prompt_embeds,
         generator=generator,
-        num_inference_steps=num_inference_steps,
+        num_inference_steps=params.steps,
         guidance_scale=params.guidance_scale,
         width=params.width,
         height=params.height,
-        original_inference_steps=50,
+        original_inference_steps=params.lcm_steps,
         output_type="pil",
     )
     nsfw_content_detected = (
