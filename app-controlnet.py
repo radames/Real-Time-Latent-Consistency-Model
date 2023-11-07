@@ -102,7 +102,7 @@ if psutil.virtual_memory().total < 64 * 1024**3:
 
 if not mps_available and not xpu_available:
     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-    pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
+    pipe(prompt="warmup", image=[Image.new("RGB", (768, 768))], control_image=[Image.new("RGB", (768, 768))])
 
 compel_proc = Compel(
     tokenizer=pipe.tokenizer,

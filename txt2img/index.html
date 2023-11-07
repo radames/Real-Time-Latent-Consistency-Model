@@ -29,8 +29,9 @@
         const errorEl = document.querySelector("#error");
         const snapBtn = document.querySelector("#snap");
         const paramsEl = document.querySelector("#params");
+        const promptEl = document.querySelector("#prompt");
         paramsEl.addEventListener("submit", (e) => e.preventDefault());
-        function LCMLive(paramsEl, liveImage) {
+        function LCMLive(promptEl, paramsEl, liveImage) {
             let websocket;
 
             async function start() {
@@ -98,11 +99,13 @@
             function initPromptStream(userId) {
                 liveImage.src = `/stream/${userId}`;
                 paramsEl.addEventListener("change", debouncedInput);
+                promptEl.addEventListener("input", debouncedInput);
             }
 
             async function stop() {
                 websocket.close();
                 paramsEl.removeEventListener("change", debouncedInput);
+                promptEl.removeEventListener("input", debouncedInput);
             }
             return {
                 start,
@@ -158,7 +161,7 @@
         }
 
 
-        const lcmLive = LCMLive(paramsEl, imageEl);
+        const lcmLive = LCMLive(promptEl, paramsEl, imageEl);
         startBtn.addEventListener("click", async () => {
             try {
                 startBtn.disabled = true;
