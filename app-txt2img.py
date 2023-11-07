@@ -76,9 +76,9 @@ pipe.unet.to(memory_format=torch.channels_last)
 if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
-# if not mps_available and not xpu_available:
-#     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-#     pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
+if not mps_available and not xpu_available:
+    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
 compel_proc = Compel(
     tokenizer=pipe.tokenizer,
