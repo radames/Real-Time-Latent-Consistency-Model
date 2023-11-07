@@ -8,3 +8,4 @@ uvicorn==0.23.2
 Pillow==10.1.0
 accelerate==0.24.0
 compel==2.0.2
+controlnet-aux==0.0.7
