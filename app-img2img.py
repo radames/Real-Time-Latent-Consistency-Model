@@ -79,8 +79,8 @@ if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
 if TORCH_COMPILE:
-    pipe.unet = torch.compile(pipe.unet, mode="max-autotune", fullgraph=False)
-    pipe.vae = torch.compile(pipe.vae, mode="max-autotune", fullgraph=False)
+    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    pipe.vae = torch.compile(pipe.vae, mode="reduce-overhead", fullgraph=True)
 
     pipe(prompt="warmup", image=[Image.new("RGB", (512, 512))])
 
