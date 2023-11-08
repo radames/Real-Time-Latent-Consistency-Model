@@ -35,6 +35,7 @@ import psutil
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
+TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)   
 WIDTH = 512
 HEIGHT = 512
 # disable tiny autoencoder for better quality speed tradeoff
@@ -100,15 +101,20 @@ pipe.unet.to(memory_format=torch.channels_last)
 if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
-if not mps_available and not xpu_available:
-    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-    pipe(prompt="warmup", image=[Image.new("RGB", (768, 768))], control_image=[Image.new("RGB", (768, 768))])
-
 compel_proc = Compel(
     tokenizer=pipe.tokenizer,
     text_encoder=pipe.text_encoder,
     truncate_long_prompts=False,
 )
+if TORCH_COMPILE:
+    pipe.text_encoder = torch.compile(pipe.text_encoder, mode="max-autotune", fullgraph=False)
+    pipe.tokenizer = torch.compile(pipe.tokenizer, mode="max-autotune", fullgraph=False)
+    pipe.unet = torch.compile(pipe.unet, mode="max-autotune", fullgraph=False)
+    pipe.vae = torch.compile(pipe.vae, mode="max-autotune", fullgraph=False)
+
+    pipe(prompt="warmup", image=[Image.new("RGB", (768, 768))], control_image=[Image.new("RGB", (768, 768))])
+
+
 user_queue_map = {}
 
 
