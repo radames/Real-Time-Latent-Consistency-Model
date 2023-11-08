@@ -79,8 +79,6 @@ if psutil.virtual_memory().total < 64 * 1024**3:
     pipe.enable_attention_slicing()
 
 if TORCH_COMPILE:
-    pipe.text_encoder = torch.compile(pipe.text_encoder, mode="max-autotune", fullgraph=False)
-    pipe.tokenizer = torch.compile(pipe.tokenizer, mode="max-autotune", fullgraph=False)
     pipe.unet = torch.compile(pipe.unet, mode="max-autotune", fullgraph=False)
     pipe.vae = torch.compile(pipe.vae, mode="max-autotune", fullgraph=False)
 
