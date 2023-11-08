@@ -21,6 +21,7 @@ You need CUDA and Python 3.10, Mac with an M1/M2/M3 chip or Intel Arc GPU
 `TIMEOUT`: limit user session timeout  
 `SAFETY_CHECKER`: disabled if you want NSFW filter off   
 `MAX_QUEUE_SIZE`: limit number of users on current app instance  
+`TORCH_COMPILE`: enable if you want to use torch compile for faster inference 
 
 ### image to image
 
@@ -30,6 +31,18 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
+
+### image to image ControlNet Canny
+
+Based pipeline from [taabata](https://github.com/taabata/LCM_Inpaint_Outpaint_Comfy)
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+uvicorn "app-controlnet:app" --host 0.0.0.0 --port 7860 --reload
+```
+
 
 ### text to image
 
