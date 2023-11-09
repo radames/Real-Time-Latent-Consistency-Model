@@ -74,8 +74,7 @@
             }
 
             async function promptUpdateStream(e) {
-                const dimension = getValue("input[name=dimension]:checked");
-                const [WIDTH, HEIGHT] = JSON.parse(dimension);
+                const [WIDTH, HEIGHT] = [512, 512];
                 websocket.send(JSON.stringify({
                     "seed": getValue("#seed"),
                     "prompt": getValue("#prompt"),
@@ -210,14 +209,8 @@
                 using
                 <a href="https://github.com/huggingface/diffusers/tree/main/examples/community#latent-consistency-pipeline"
                     target="_blank" class="text-blue-500 underline hover:no-underline">Diffusers</a> with a MJPEG
-                stream server.
-            </p>
-            <p class="text-sm">
-                There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU, affecting
-                real-time performance. Maximum queue size is 10. <a
-                    href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
-                    target="_blank" class="text-blue-500 underline hover:no-underline">Duplicate</a> and run it on your
-                own GPU.
+                stream server. Featuring <a href="https://huggingface.co/wavymulder/Analog-Diffusion" target="_blank"
+                    class="text-blue-500 underline hover:no-underline">Analog Diffusion</a> Model.
             </p>
         </article>
         <div>
@@ -230,7 +223,7 @@
             <div class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
                 <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1  outline-none dark:text-black"
                     title=" Start your session and type your prompt here, you can see the result in real-time."
-                    placeholder="Add your prompt here...">Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5, cinematic, masterpiece</textarea>
+                    placeholder="Add your prompt here...">Analog style photograph of young Harrison Ford as Han Solo, star wars behind the scenes</textarea>
             </div>
 
         </div>
@@ -238,25 +231,6 @@
             <details>
                 <summary class="font-medium cursor-pointer">Advanced Options</summary>
                 <form class="grid grid-cols-3 items-center gap-3 py-3" id="params" action="">
-                    <label class="text-sm font-medium" for="dimension">Image Dimensions</label>
-                    <div class="col-span-2 flex gap-2">
-                        <div class="flex gap-1">
-                            <input type="radio" id="dimension512" name="dimension" value="[512,512]"
-                                class="cursor-pointer">
-                            <label for="dimension512" class="text-sm cursor-pointer">512x512</label>
-                        </div>
-                        <div class="flex gap-1">
-                            <input type="radio" id="dimension768" name="dimension" value="[768,768]"
-                                lass="cursor-pointer">
-                            <label for="dimension768" class="text-sm cursor-pointer">768x768</label>
-                        </div>
-                        <div class="flex gap-1">
-                            <input type="radio" id="dimension1024" name="dimension" value="[1024,1024]" checked
-                                class="cursor-pointer">
-                            <label for="dimension1024" class="text-sm cursor-pointer">1024x1024</label>
-                        </div>
-                    </div>
-                    <!--  -->
                     <label class="text-sm font-medium " for="steps">Inference Steps
                     </label>
                     <input type="range" id="steps" name="steps" min="1" max="20" value="4"

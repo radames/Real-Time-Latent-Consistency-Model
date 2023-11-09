@@ -14,7 +14,7 @@ from fastapi.responses import (
 )
 
 from diffusers import DiffusionPipeline, LCMScheduler, AutoencoderTiny
-from compel import Compel, ReturnedEmbeddingsType
+from compel import Compel
 import torch
 
 try:
@@ -35,11 +35,10 @@ MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)
+HF_TOKEN = os.environ.get("HF_TOKEN", None)
 
-WIDTH = 768
-HEIGHT = 768
-# disable tiny autoencoder for better quality speed tradeoff
-USE_TINY_AUTOENCODER = False
+WIDTH = 512
+HEIGHT = 512
 
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
@@ -49,7 +48,7 @@ device = torch.device(
 )
 torch_device = device
 # change to torch.float16 to save GPU memory
-torch_dtype = torch.float16
+torch_dtype = torch.float
 
 print(f"TIMEOUT: {TIMEOUT}")
 print(f"SAFETY_CHECKER: {SAFETY_CHECKER}")
@@ -61,17 +60,15 @@ if mps_available:
     torch_device = "cpu"
     torch_dtype = torch.float32
 
-model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+model_id = "wavymulder/Analog-Diffusion"
+lcm_lora_id = "lcm-sd/lcm-sd1.5-lora"
 
 if SAFETY_CHECKER == "True":
     pipe = DiffusionPipeline.from_pretrained(model_id)
 else:
     pipe = DiffusionPipeline.from_pretrained(model_id, safety_checker=None)
-    
-if USE_TINY_AUTOENCODER:
-    pipe.vae = AutoencoderTiny.from_pretrained(
-        "madebyollin/taesd", torch_dtype=torch_dtype, use_safetensors=True
-    )
+
+
 pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
 pipe.set_progress_bar_config(disable=True)
 pipe.to(device=torch_device, dtype=torch_dtype).to(device)
@@ -86,15 +83,19 @@ if TORCH_COMPILE:
     pipe.vae = torch.compile(pipe.vae, mode="reduce-overhead", fullgraph=True)
 
     pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
-
+ 
 # Load LCM LoRA
-pipe.load_lora_weights("lcm-sd/lcm-sdxl-lora", weight_name="lcm_sdxl_lora.safetensors", adapter_name="lcm")
+pipe.load_lora_weights(
+    lcm_lora_id,
+    weight_name="lcm_sd_lora.safetensors",
+    adapter_name="lcm",
+    use_auth_token=HF_TOKEN,
+)
 
 compel_proc = Compel(
-    tokenizer=[pipe.tokenizer, pipe.tokenizer_2],
-    text_encoder=[pipe.text_encoder, pipe.text_encoder_2],
-    returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
-    requires_pooled=[False, True],
+    tokenizer=pipe.tokenizer,
+    text_encoder=pipe.text_encoder,
+    truncate_long_prompts=False,
 )
 user_queue_map = {}
 
@@ -112,10 +113,9 @@ class InputParams(BaseModel):
 
 def predict(params: InputParams):
     generator = torch.manual_seed(params.seed)
-    prompt_embeds, pooled_prompt_embeds = compel_proc(params.prompt)
+    prompt_embeds = compel_proc(params.prompt)
     results = pipe(
         prompt_embeds=prompt_embeds,
-        pooled_prompt_embeds=pooled_prompt_embeds,
         generator=generator,
         num_inference_steps=params.steps,
         guidance_scale=params.guidance_scale,
