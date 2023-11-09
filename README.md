@@ -1,5 +1,5 @@
 ---
-title: Real-Time Latent Consistency Model Image-to-Image
+title: Real-Time LCM Image-to-Image Lora SD1.5
 emoji: 🖼️🖼️
 colorFrom: gray
 colorTo: indigo
