@@ -6,8 +6,12 @@ from pydantic import BaseModel
 
 from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import (
+    StreamingResponse,
+    JSONResponse,
+    HTMLResponse,
+    FileResponse,
+)
 
 from diffusers import AutoPipelineForImage2Image, AutoencoderTiny
 from compel import Compel
@@ -29,7 +33,7 @@ import psutil
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
-TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)   
+TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)
 
 WIDTH = 512
 HEIGHT = 512
@@ -102,7 +106,10 @@ class InputParams(BaseModel):
     width: int = WIDTH
     height: int = HEIGHT
 
-def predict(input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None):
+
+def predict(
+    input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None
+):
     generator = torch.manual_seed(params.seed)
     results = pipe(
         prompt_embeds=prompt_embeds,
@@ -259,4 +266,6 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
         traceback.print_exc()
 
 
-app.mount("/", StaticFiles(directory="img2img", html=True), name="public")
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return FileResponse("./static/img2img.html")

@@ -6,15 +6,20 @@ from pydantic import BaseModel
 
 from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import (
+    StreamingResponse,
+    JSONResponse,
+    HTMLResponse,
+    FileResponse,
+)
 
 from diffusers import AutoencoderTiny, ControlNetModel
 from latent_consistency_controlnet import LatentConsistencyModelPipeline_controlnet
 from compel import Compel
 import torch
 
-from canny_gpu import SobelOperator 
+from canny_gpu import SobelOperator
+
 # from controlnet_aux import OpenposeDetector
 # import cv2
 
@@ -35,7 +40,7 @@ import psutil
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
-TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)   
+TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)
 WIDTH = 512
 HEIGHT = 512
 # disable tiny autoencoder for better quality speed tradeoff
@@ -110,7 +115,11 @@ if TORCH_COMPILE:
     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
     pipe.vae = torch.compile(pipe.vae, mode="reduce-overhead", fullgraph=True)
 
-    pipe(prompt="warmup", image=[Image.new("RGB", (768, 768))], control_image=[Image.new("RGB", (768, 768))])
+    pipe(
+        prompt="warmup",
+        image=[Image.new("RGB", (768, 768))],
+        control_image=[Image.new("RGB", (768, 768))],
+    )
 
 
 user_queue_map = {}
@@ -132,12 +141,15 @@ class InputParams(BaseModel):
     canny_high_threshold: float = 0.78
     debug_canny: bool = False
 
+
 def predict(
     input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None
 ):
     generator = torch.manual_seed(params.seed)
-    
-    control_image = canny_torch(input_image, params.canny_low_threshold, params.canny_high_threshold)
+
+    control_image = canny_torch(
+        input_image, params.canny_low_threshold, params.canny_high_threshold
+    )
     results = pipe(
         control_image=control_image,
         prompt_embeds=prompt_embeds,
@@ -305,4 +317,6 @@ async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
         traceback.print_exc()
 
 
-app.mount("/", StaticFiles(directory="controlnet", html=True), name="public")
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return FileResponse("./static/controlnet.html")
