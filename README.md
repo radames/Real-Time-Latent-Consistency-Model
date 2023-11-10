@@ -19,41 +19,61 @@ You need a webcam to run this demo. 🤗
 You need CUDA and Python 3.10, Mac with an M1/M2/M3 chip or Intel Arc GPU
 
 `TIMEOUT`: limit user session timeout  
-`SAFETY_CHECKER`: disabled if you want NSFW filter off   
+`SAFETY_CHECKER`: disabled if you want NSFW filter off  
 `MAX_QUEUE_SIZE`: limit number of users on current app instance  
-`TORCH_COMPILE`: enable if you want to use torch compile for faster inference 
+`TORCH_COMPILE`: enable if you want to use torch compile for faster inference works well on A100 GPUs
 
-### image to image
+
+## Install
 
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
+```
+
+# LCM
+### Image to Image
+
+```bash
 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
 
-### image to image ControlNet Canny
+### Image to Image ControlNet Canny
 
 Based pipeline from [taabata](https://github.com/taabata/LCM_Inpaint_Outpaint_Comfy)
 
 ```bash
-python -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
 uvicorn "app-controlnet:app" --host 0.0.0.0 --port 7860 --reload
 ```
 
-
-### text to image
+### Text to Image
 
 ```bash
-python -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
 uvicorn "app-txt2img:app" --host 0.0.0.0 --port 7860 --reload
 ```
 
-or with environment variables
+# LCM + LoRa
+
+Using LCM-LoRA, giving it the super power of doing inference in as little as 4 steps. [Learn more here](https://huggingface.co/blog/lcm_lora) or [technical report](https://huggingface.co/papers/2311.05556)
+
+
+
+### Image to Image ControlNet Canny LoRa
+
+
+```bash
+uvicorn "app-controlnetlora:app" --host 0.0.0.0 --port 7860 --reload
+```
+
+### Text to Image
+
+```bash
+uvicorn "app-txt2imglora:app" --host 0.0.0.0 --port 7860 --reload
+```
+
+
+### Setting environment variables
 
 ```bash
 TIMEOUT=120 SAFETY_CHECKER=True MAX_QUEUE_SIZE=4 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
