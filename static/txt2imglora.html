@@ -212,6 +212,10 @@
                 stream server. Featuring <a href="https://huggingface.co/wavymulder/Analog-Diffusion" target="_blank"
                     class="text-blue-500 underline hover:no-underline">Analog Diffusion</a> Model.
             </p>
+            <p class="text-sm">
+                There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU, affecting
+                real-time performance.
+            </p>
         </article>
         <div>
             <h2 class="font-medium">Prompt</h2>
@@ -250,7 +254,7 @@
                     <input type="range" id="guidance-scale" name="guidance-scale" min="0" max="5" step="0.0001"
                         value="0.8" oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
-                        8.0</output>
+                        0.8</output>
                     <!--  -->
                     <label class="text-sm font-medium" for="seed">Seed</label>
                     <input type="number" id="seed" name="seed" value="299792458"

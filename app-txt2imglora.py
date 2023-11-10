@@ -35,7 +35,6 @@ MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)
-HF_TOKEN = os.environ.get("HF_TOKEN", None)
 
 WIDTH = 512
 HEIGHT = 512
@@ -61,7 +60,7 @@ if mps_available:
     torch_dtype = torch.float32
 
 model_id = "wavymulder/Analog-Diffusion"
-lcm_lora_id = "lcm-sd/lcm-sd1.5-lora"
+lcm_lora_id = "latent-consistency/lcm-lora-sdv1-5"
 
 if SAFETY_CHECKER == "True":
     pipe = DiffusionPipeline.from_pretrained(model_id)
@@ -83,13 +82,11 @@ if TORCH_COMPILE:
     pipe.vae = torch.compile(pipe.vae, mode="reduce-overhead", fullgraph=True)
 
     pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
- 
+
 # Load LCM LoRA
 pipe.load_lora_weights(
     lcm_lora_id,
-    weight_name="lcm_sd_lora.safetensors",
-    adapter_name="lcm",
-    use_auth_token=HF_TOKEN,
+    adapter_name="lcm"
 )
 
 compel_proc = Compel(
@@ -121,7 +118,6 @@ def predict(params: InputParams):
         guidance_scale=params.guidance_scale,
         width=params.width,
         height=params.height,
-        # original_inference_steps=params.lcm_steps,
         output_type="pil",
     )
     nsfw_content_detected = (

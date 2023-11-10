@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Real-Time Latent Consistency Model ControlNet</title>
+    <title>Real-Time Latent Consistency Model ControlNet Lora</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.1/iframeResizer.contentWindow.min.js"></script>
@@ -93,8 +93,9 @@
             }
 
             async function videoTimeUpdateHandler() {
-                const dimension = getValue("input[name=dimension]:checked");
-                const [WIDTH, HEIGHT] = JSON.parse(dimension);
+                const model_id = getValue("input[name=base_model]:checked");
+
+                const [WIDTH, HEIGHT] = [512, 512];
 
                 const canvas = new OffscreenCanvas(WIDTH, HEIGHT);
                 const videoW = webcamVideo.videoWidth;
@@ -118,7 +119,8 @@
                     "controlnet_end": getValue("#controlnet_end"),
                     "canny_low_threshold": getValue("#canny_low_threshold"),
                     "canny_high_threshold": getValue("#canny_high_threshold"),
-                    "debug_canny": getValue("#debug_canny")
+                    "debug_canny": getValue("#debug_canny"),
+                    "model_id": model_id
                 }));
             }
             let mediaDevices = [];
@@ -220,8 +222,33 @@
                 console.log(err);
             }
         }
+        const models_id = {
+            "nitrosocke/Ghibli-Diffusion": "ghibli style",
+            "nitrosocke/mo-di-diffusion": "modern disney style",
+            "wavymulder/Analog-Diffusion": "analog style"
+        }
 
+        document.addEventListener("DOMContentLoaded", () => {
+            const models_options = document.querySelector("#models_options");
+            Object.entries(models_id).forEach(([model, activation], i) => {
+                const modelEl = document.createElement("div");
+                modelEl.innerHTML = `
+                <input type="radio" id="${model}" name="base_model" value="${model}" class="cursor-pointer" ${i === 0 ? "checked" : ""}>
+                <label for="${model}" class="text-sm cursor-pointer" title="Use the keyword on your prompt: ${activation}">${model}: <b>${activation}</b>
+                    <a href="https://hf.co/${model}" title="Model link on Hugging Face" target="_blank" class="text-sm text-blue-500 underline hover:no-underline">⤴️</a></label>
+                `;
+                models_options.appendChild(modelEl);
+            })
+            models_options.addEventListener("change", () => {
+                const model = getValue("input[name=base_model]:checked");
+                const prompt = getValue("#prompt");
+                const activation = models_id[model];
+                if (prompt.includes(activation))
+                    return;
+                document.querySelector("#prompt").value = `${activation} portrait of a person`;
+            })
 
+        })
         const lcmLive = LCMLive(videoEl, imageEl);
         startBtn.addEventListener("click", async () => {
             try {
@@ -263,16 +290,18 @@
     <main class="container mx-auto px-4 py-4 max-w-4xl flex flex-col gap-4">
         <article class="text-center max-w-xl mx-auto">
             <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
-            <h2 class="text-2xl font-bold mb-4">ControlNet Lora</h2>
+            <h2 class="text-2xl font-bold mb-4">ControlNet LoRa</h2>
             <p class="text-sm">
                 This demo showcases
-                <a href="https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7" target="_blank"
-                    class="text-blue-500 underline hover:no-underline">LCM</a> Image to Image pipeline
-                using
-                <a href="https://github.com/huggingface/diffusers/tree/main/examples/community#latent-consistency-pipeline"
+                <a href="https://huggingface.co/blog/lcm_lora" target="_blank"
+                    class="text-blue-500 underline hover:no-underline">LCM LoRa</a> ControlNet pipeline
+                using <a
+                    href="https://huggingface.co/docs/diffusers/api/pipelines/latent_consistency_models#latent-consistency-models"
                     target="_blank" class="text-blue-500 underline hover:no-underline">Diffusers</a> with a MJPEG
-                stream server. Featuring <a href="https://huggingface.co/nitrosocke/mo-di-diffusion" target="_blank"
-                    class="text-blue-500 underline hover:no-underline">Nitrosocke Mo-Di Diffusion</a>Model.
+                stream server.
+            </p>
+            <p class="text-sm">
+                There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU.
             </p>
         </article>
         <div>
@@ -285,9 +314,14 @@
             <div class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
                 <textarea type="text" id="prompt" class="font-light w-full px-3 py-2 mx-1  outline-none dark:text-black"
                     title="Prompt, this is an example, feel free to modify"
-                    placeholder="Add your prompt here...">a magical princess with golden hair, modern disney style</textarea>
+                    placeholder="Add your prompt here...">ghibli style portrait of a person</textarea>
             </div>
         </div>
+        <!--  -->
+        <label class="font-medium" for="base_model">Base Model</label>
+        <fieldset class="flex flex-col gap-2" id="models_options">
+        </fieldset>
+        <!--  -->
         <div class="">
             <details>
                 <summary class="font-medium cursor-pointer">Advanced Options</summary>
@@ -310,7 +344,7 @@
                         0.3</output>
                     <!--  -->
                     <label class="text-sm font-medium" for="strength">Strength</label>
-                    <input type="range" id="strength" name="strength" min="0.1" max="1" step="0.001" value="0.50"
+                    <input type="range" id="strength" name="strength" min="0.1" max="1" step="0.0001" value="0.50"
                         oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                         0.5</output>
@@ -357,7 +391,7 @@
                     </button>
                     <!--  -->
                     <!--  -->
-                    <label class="text-sm font-medium" for="dimension">Image Dimensions</label>
+                    <!-- <label class="text-sm font-medium" for="dimension">Image Dimensions</label>
                     <div class="col-span-2 flex gap-2">
                         <div class="flex gap-1">
                             <input type="radio" id="dimension512" name="dimension" value="[512,512]" checked
@@ -369,7 +403,7 @@
                                 lass="cursor-pointer">
                             <label for="dimension768" class="text-sm cursor-pointer">768x768</label>
                         </div>
-                    </div>
+                    </div> -->
                     <!--  -->
                     <!--  -->
                     <label class="text-sm font-medium" for="debug_canny">Debug Canny</label>

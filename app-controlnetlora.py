@@ -23,9 +23,6 @@ import torch
 
 from canny_gpu import SobelOperator
 
-# from controlnet_aux import OpenposeDetector
-# import cv2
-
 try:
     import intel_extension_for_pytorch as ipex
 except:
@@ -44,11 +41,9 @@ MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None)
 TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None)
-HF_TOKEN = os.environ.get("HF_TOKEN", None)
 
 WIDTH = 512
 HEIGHT = 512
-
 
 # check if MPS is available OSX only M1/M2/M3 chips
 mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
@@ -76,37 +71,40 @@ controlnet_canny = ControlNetModel.from_pretrained(
 
 canny_torch = SobelOperator(device=device)
 
-model_id = "nitrosocke/mo-di-diffusion"
-lcm_lora_id = "lcm-sd/lcm-sd1.5-lora"
+models_id = [
+    "wavymulder/Analog-Diffusion",
+    "nitrosocke/Ghibli-Diffusion",
+    "nitrosocke/mo-di-diffusion",
+]
+lcm_lora_id = "latent-consistency/lcm-lora-sdv1-5"
 
 if SAFETY_CHECKER == "True":
-    pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-        model_id,
-        controlnet=controlnet_canny,
-    )
+    pipes = {}
+    for model_id in models_id:
+        pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+            model_id,
+            controlnet=controlnet_canny,
+        )
+        pipes[model_id] = pipe
 else:
-    pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-        model_id,
-        safety_checker=None,
-        controlnet=controlnet_canny,
-    )
+    pipes = {}
+    for model_id in models_id:
+        pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            controlnet=controlnet_canny,
+        )
+        pipes[model_id] = pipe
+for pipe in pipes.values():
+    pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
+    pipe.set_progress_bar_config(disable=True)
+    pipe.to(device=device, dtype=torch_dtype).to(device)
 
-pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
-pipe.set_progress_bar_config(disable=True)
-pipe.to(device=device, dtype=torch_dtype).to(device)
-pipe.unet.to(memory_format=torch.channels_last)
+    if psutil.virtual_memory().total < 64 * 1024**3:
+        pipe.enable_attention_slicing()
 
-
-if psutil.virtual_memory().total < 64 * 1024**3:
-    pipe.enable_attention_slicing()
-
-# Load LCM LoRA
-pipe.load_lora_weights(
-    lcm_lora_id,
-    weight_name="lcm_sd_lora.safetensors",
-    adapter_name="lcm",
-    use_auth_token=HF_TOKEN,
-)
+    # Load LCM LoRA
+    pipe.load_lora_weights(lcm_lora_id, adapter_name="lcm")
 
 compel_proc = Compel(
     tokenizer=pipe.tokenizer,
@@ -142,16 +140,17 @@ class InputParams(BaseModel):
     canny_low_threshold: float = 0.31
     canny_high_threshold: float = 0.78
     debug_canny: bool = False
+    model_id: str = "nitrosocke/Ghibli-Diffusion"
 
 
-def predict(
-    input_image: Image.Image, params: InputParams, prompt_embeds: torch.Tensor = None
-):
+def predict(input_image: Image.Image, params: InputParams):
     generator = torch.manual_seed(params.seed)
 
     control_image = canny_torch(
         input_image, params.canny_low_threshold, params.canny_high_threshold
     )
+    prompt_embeds = compel_proc(params.prompt)
+    pipe = pipes[params.model_id]
     results = pipe(
         control_image=control_image,
         prompt_embeds=prompt_embeds,
@@ -245,23 +244,16 @@ async def stream(user_id: uuid.UUID):
 
         async def generate():
             last_prompt: str = None
-            prompt_embeds: torch.Tensor = None
             while True:
                 data = await queue.get()
                 input_image = data["image"]
                 params = data["params"]
                 if input_image is None:
                     continue
-                # avoid recalculate prompt embeds
-                if last_prompt != params.prompt:
-                    print("new prompt")
-                    prompt_embeds = compel_proc(params.prompt)
-                    last_prompt = params.prompt
 
                 image = predict(
                     input_image,
                     params,
-                    prompt_embeds,
                 )
                 if image is None:
                     continue
