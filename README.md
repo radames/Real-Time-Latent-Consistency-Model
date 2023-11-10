@@ -14,6 +14,8 @@ This demo showcases [Latent Consistency Model (LCM)](https://huggingface.co/Simi
 
 You need a webcam to run this demo. 🤗
 
+See a collecting with live demos [here](https://huggingface.co/collections/latent-consistency/latent-consistency-model-demos-654e90c52adb0688a0acbe6f)
+
 ## Running Locally
 
 You need CUDA and Python 3.10, Mac with an M1/M2/M3 chip or Intel Arc GPU
