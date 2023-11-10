@@ -80,7 +80,6 @@
                     "prompt": getValue("#prompt"),
                     "guidance_scale": getValue("#guidance-scale"),
                     "steps": getValue("#steps"),
-                    "lcm_steps": getValue("#lcm_steps"),
                     "width": WIDTH,
                     "height": HEIGHT,
                 }));
@@ -134,7 +133,7 @@
                 const exif = {};
                 const gps = {};
                 zeroth[piexif.ImageIFD.Make] = "LCM Text-to-Image";
-                zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${getValue("#prompt")} | seed: ${getValue("#seed")} | guidance_scale: ${getValue("#guidance-scale")} | lcm_steps: ${getValue("#lcm_steps")} | steps: ${getValue("#steps")}`;
+                zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${getValue("#prompt")} | seed: ${getValue("#seed")} | guidance_scale: ${getValue("#guidance-scale")}  | steps: ${getValue("#steps")}`;
                 zeroth[piexif.ImageIFD.Software] = "https://github.com/radames/Real-Time-Latent-Consistency-Model";
 
                 exif[piexif.ExifIFD.DateTimeOriginal] = new Date().toISOString();
@@ -237,18 +236,10 @@
                 <form class="grid grid-cols-3 items-center gap-3 py-3" id="params" action="">
                     <label class="text-sm font-medium " for="steps">Inference Steps
                     </label>
-                    <input type="range" id="steps" name="steps" min="1" max="20" value="4"
+                    <input type="range" id="steps" name="steps" min="2" max="10" value="4"
                         oninput="this.nextElementSibling.value = Number(this.value)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                         4</output>
-                    <!--  -->
-                    <label class="text-sm font-medium" for="lcm_steps">LCM Inference Steps
-                    </label>
-                    <input type="range" id="lcm_steps" name="lcm_steps" min="2" max="60" value="50"
-                        oninput="this.nextElementSibling.value = Number(this.value)">
-                    <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
-                        50</output>
-                    <!--  -->
                     <label class="text-sm font-medium" for="guidance-scale">Guidance Scale
                     </label>
                     <input type="range" id="guidance-scale" name="guidance-scale" min="0" max="5" step="0.0001"
