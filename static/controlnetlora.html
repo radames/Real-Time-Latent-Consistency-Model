@@ -225,7 +225,7 @@
         const models_id = {
             "nitrosocke/Ghibli-Diffusion": "ghibli style",
             "nitrosocke/mo-di-diffusion": "modern disney style",
-            "wavymulder/Analog-Diffusion": "analog style"
+            "plasmo/woolitize": "woolitize"
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -245,7 +245,7 @@
                 const activation = models_id[model];
                 if (prompt.includes(activation))
                     return;
-                document.querySelector("#prompt").value = `${activation} portrait of a person`;
+                document.querySelector("#prompt").value = `${activation} portrait of a silly monster`;
             })
 
         })
@@ -332,7 +332,7 @@
                     <div></div>
                     <label class="text-sm font-medium " for="steps">Inference Steps
                     </label>
-                    <input type="range" id="steps" name="steps" min="1" max="8" value="4"
+                    <input type="range" id="steps" name="steps" min="2" max="10" value="4"
                         oninput="this.nextElementSibling.value = Number(this.value)">
                     <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                         4</output>

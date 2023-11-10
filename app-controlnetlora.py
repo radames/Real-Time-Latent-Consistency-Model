@@ -72,7 +72,7 @@ controlnet_canny = ControlNetModel.from_pretrained(
 canny_torch = SobelOperator(device=device)
 
 models_id = [
-    "wavymulder/Analog-Diffusion",
+    "plasmo/woolitize",
     "nitrosocke/Ghibli-Diffusion",
     "nitrosocke/mo-di-diffusion",
 ]
