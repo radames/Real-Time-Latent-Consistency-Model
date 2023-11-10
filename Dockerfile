@@ -41,4 +41,4 @@ COPY --chown=user . $HOME/app
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4
 # CMD ["uvicorn", "app-img2img:app", "--host", "0.0.0.0", "--port", "7860"]
 # CMD ["uvicorn", "app-txt2img:app", "--host", "0.0.0.0", "--port", "7860"]
-CMD ["uvicorn", "app-txt2imglora:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "app-controlnet:app", "--host", "0.0.0.0", "--port", "7860"]
