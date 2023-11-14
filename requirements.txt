@@ -3,8 +3,8 @@ transformers==4.34.1
 gradio==3.50.2
 --extra-index-url https://download.pytorch.org/whl/cu121;
 torch==2.1.0
-fastapi==0.104.0
-uvicorn==0.23.2
+fastapi==0.104.1
+uvicorn==0.24.0.post1
 Pillow==10.1.0
 accelerate==0.24.0
 compel==2.0.2
