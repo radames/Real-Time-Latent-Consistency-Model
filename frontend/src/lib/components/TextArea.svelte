@@ -1,0 +1,18 @@
+<script lang="ts">
+  import type { FieldProps } from '$lib/types';
+  import { onMount } from 'svelte';
+  export let value: string;
+  export let params: FieldProps;
+  onMount(() => {
+    value = String(params?.default ?? '');
+  });
+</script>
+
+<div class="text-normal flex items-center rounded-md border border-gray-700 px-1 py-1">
+  <textarea
+    class="mx-1 w-full px-3 py-2 font-light outline-none dark:text-black"
+    title={params?.title}
+    placeholder="Add your prompt here..."
+    bind:value
+  ></textarea>
+</div>

@@ -1,5 +1,7 @@
 from importlib import import_module
 from types import ModuleType
+from typing import Dict, Any
+from pydantic import BaseModel as PydanticBaseModel, Field
 
 
 def get_pipeline_class(pipeline_name: str) -> ModuleType:
@@ -11,6 +13,6 @@ def get_pipeline_class(pipeline_name: str) -> ModuleType:
     pipeline_class = getattr(module, "Pipeline", None)
 
     if pipeline_class is None:
-        raise ValueError(f"'Pipeline' class not found in module '{module_name}'.")
+        raise ValueError(f"'Pipeline' class not found in module '{pipeline_name}'.")
 
     return pipeline_class

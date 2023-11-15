@@ -140,6 +140,6 @@ def init_app(app: FastAPI, user_queue_map: UserQueueDict, args: Args, pipeline):
     @app.get("/settings")
     async def settings():
         params = pipeline.InputParams()
-        return JSONResponse({"settings": params.dict()})
+        return JSONResponse(params.model_json_schema())
 
     app.mount("/", StaticFiles(directory="public", html=True), name="public")

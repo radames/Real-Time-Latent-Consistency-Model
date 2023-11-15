@@ -9,23 +9,48 @@ except:
 
 import psutil
 from config import Args
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from PIL import Image
 from typing import Callable
 
 base_model = "SimianLuo/LCM_Dreamshaper_v7"
 taesd_model = "madebyollin/taesd"
 
+default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
+
 
 class Pipeline:
     class InputParams(BaseModel):
-        seed: int = 2159232
-        prompt: str = ""
-        guidance_scale: float = 8.0
-        strength: float = 0.5
-        steps: int = 4
-        width: int = 512
-        height: int = 512
+        prompt: str = Field(
+            default_prompt,
+            title="Prompt",
+            field="textarea",
+        )
+        seed: int = Field(2159232, min=0, title="Seed", field="seed", hide=True)
+        strength: float = Field(
+            0.5,
+            min=0,
+            max=1,
+            step=0.001,
+            title="Strength",
+            field="range",
+            hide=True,
+        )
+
+        steps: int = Field(4, min=2, max=15, title="Steps", field="range", hide=True)
+        width: int = Field(512, min=2, max=15, title="Width", disabled=True, hide=True)
+        height: int = Field(
+            512, min=2, max=15, title="Height", disabled=True, hide=True
+        )
+        guidance_scale: float = Field(
+            8.0,
+            min=1,
+            max=30,
+            step=0.001,
+            title="Guidance Scale",
+            field="range",
+            hide=True,
+        )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
         if args.safety_checker:

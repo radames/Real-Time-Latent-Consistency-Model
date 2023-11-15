@@ -102,6 +102,12 @@ or with environment variables
 ```bash
 docker run -ti -e TIMEOUT=0 -e SAFETY_CHECKER=False -p 7860:7860 --gpus all lcm-live
 ```
+# Development Mode
+
+
+```bash
+python run.py --reload  
+```
 
 # Demo on Hugging Face
 
