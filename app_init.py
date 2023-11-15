@@ -139,7 +139,8 @@ def init_app(app: FastAPI, user_queue_map: UserQueueDict, args: Args, pipeline):
     # route to setup frontend
     @app.get("/settings")
     async def settings():
-        params = pipeline.InputParams()
-        return JSONResponse(params.model_json_schema())
+        info = pipeline.Info.schema()
+        input_params = pipeline.InputParams.schema()
+        return JSONResponse({"info": info, "input_params": input_params})
 
     app.mount("/", StaticFiles(directory="public", html=True), name="public")

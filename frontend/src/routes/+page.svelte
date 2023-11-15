@@ -1,13 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
-  import type { FieldProps } from '$lib/types';
+  import type { FieldProps, PipelineInfo } from '$lib/types';
   import ImagePlayer from '$lib/components/ImagePlayer.svelte';
   import VideoInput from '$lib/components/VideoInput.svelte';
   import Button from '$lib/components/Button.svelte';
   import PipelineOptions from '$lib/components/PipelineOptions.svelte';
+  import Spinner from '$lib/icons/spinner.svelte';
 
   let pipelineParams: FieldProps[];
+  let pipelineInfo: PipelineInfo;
   let pipelineValues = {};
 
   onMount(() => {
@@ -16,8 +18,10 @@
 
   async function getSettings() {
     const settings = await fetch(`${PUBLIC_BASE_URL}/settings`).then((r) => r.json());
-    pipelineParams = Object.values(settings.properties);
+    pipelineParams = Object.values(settings.input_params.properties);
+    pipelineInfo = settings.info.properties;
     pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
+    console.log('SETTINGS', pipelineInfo);
   }
 
   $: {
@@ -53,24 +57,32 @@
       > and run it on your own GPU.
     </p>
   </article>
-  <h2 class="font-medium">Prompt</h2>
-  <p class="text-sm text-gray-500">
-    Change the prompt to generate different images, accepts <a
-      href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
-      target="_blank"
-      class="text-blue-500 underline hover:no-underline">Compel</a
-    > syntax.
-  </p>
-  <PipelineOptions {pipelineParams} bind:pipelineValues></PipelineOptions>
-  <div class="flex gap-3">
-    <Button>Start</Button>
-    <Button>Stop</Button>
-    <Button>Snapshot</Button>
-  </div>
+  {#if pipelineParams}
+    <h2 class="font-medium">Prompt</h2>
+    <p class="text-sm text-gray-500">
+      Change the prompt to generate different images, accepts <a
+        href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+        target="_blank"
+        class="text-blue-500 underline hover:no-underline">Compel</a
+      > syntax.
+    </p>
+    <PipelineOptions {pipelineParams} bind:pipelineValues></PipelineOptions>
+    <div class="flex gap-3">
+      <Button>Start</Button>
+      <Button>Stop</Button>
+      <Button classList={'ml-auto'}>Snapshot</Button>
+    </div>
 
-  <ImagePlayer>
-    <VideoInput></VideoInput>
-  </ImagePlayer>
+    <ImagePlayer>
+      <VideoInput></VideoInput>
+    </ImagePlayer>
+  {:else}
+    <!-- loading -->
+    <div class="flex items-center justify-center gap-3 py-48 text-2xl">
+      <Spinner classList={'animate-spin opacity-50'}></Spinner>
+      <p>Loading...</p>
+    </div>
+  {/if}
 </main>
 
 <style lang="postcss">

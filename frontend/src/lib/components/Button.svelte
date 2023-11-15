@@ -1,4 +1,10 @@
-<button class="button" on:click> <slot /> </button>
+<script lang="ts">
+  export let classList: string = '';
+</script>
+
+<button class="button {classList}" on:click>
+  <slot />
+</button>
 
 <style lang="postcss">
   .button {

@@ -24,6 +24,6 @@
     type="number"
     step={params?.step ?? 1}
     bind:value
-    class="rounded-md border border-gray-700 px-1 py-1 text-center text-xs font-light"
+    class="rounded-md border border-gray-700 px-1 py-1 text-center text-xs font-bold dark:text-black"
   />
 </div>

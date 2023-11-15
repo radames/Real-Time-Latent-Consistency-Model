@@ -14,3 +14,8 @@ export interface FieldProps {
     disabled?: boolean;
     hide?: boolean;
 }
+export interface PipelineInfo {
+    name: string;
+    description: string;
+    mode: string;
+}
