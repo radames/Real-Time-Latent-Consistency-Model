@@ -8,5 +8,4 @@ else
     echo -e "\033[1;31m\nfrontend build failed\n\033[0m" >&2  exit 1
 fi
 cd ../
-python run.py --reload
-
+python run.py --reload  --pipeline controlnet

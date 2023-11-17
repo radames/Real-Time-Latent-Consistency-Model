@@ -15,7 +15,7 @@
     onFrameChangeStore,
     MediaStreamStatusEnum
   } from '$lib/mediaStream';
-  import { getPipelineValues } from '$lib/store';
+  import { getPipelineValues, pipelineValues } from '$lib/store';
 
   let pipelineParams: FieldProps[];
   let pipelineInfo: PipelineInfo;
@@ -46,18 +46,15 @@
       lcmLiveActions.send($onFrameChangeStore.blob);
     }
   }
+  // send only prompt if text mode
+  $: {
+    if ($lcmLiveStatus === LCMLiveStatus.CONNECTED) {
+      lcmLiveActions.send($pipelineValues);
+    }
+  }
 
   $: isLCMRunning = $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED;
-  // $: {
-  //   console.log('onFrameChangeStore', $onFrameChangeStore);
-  // }
 
-  // // send Webcam stream to LCM
-  // $: {
-  //   if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
-  //     lcmLiveActions.send($pipelineValues);
-  //   }
-  // }
   let disabled = false;
   async function toggleLcmLive() {
     if (!isLCMRunning) {
