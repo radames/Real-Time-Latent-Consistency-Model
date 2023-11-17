@@ -42,6 +42,13 @@ class UserData:
             return None
 
     def delete_user(self, user_id: UUID):
+        user_session = self.data_content[user_id]
+        queue = user_session["queue"]
+        while not queue.empty():
+            try:
+                queue.get_nowait()
+            except asyncio.QueueEmpty:
+                continue
         if user_id in self.data_content:
             del self.data_content[user_id]
 

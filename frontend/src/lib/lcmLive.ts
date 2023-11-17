@@ -41,6 +41,7 @@ export const lcmLiveActions = {
                             const userId = data.userId;
                             lcmLiveStatus.set(LCMLiveStatus.CONNECTED);
                             streamId.set(userId);
+                            resolve(userId);
                             break;
                         case "timeout":
                             console.log("timeout");

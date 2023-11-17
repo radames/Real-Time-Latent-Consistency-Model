@@ -12,7 +12,7 @@
   let videoFrameCallbackId: number;
   const WIDTH = 512;
   const HEIGHT = 512;
-  const THROTTLE_FPS = 10;
+  const THROTTLE_FPS = 6;
 
   onDestroy(() => {
     if (videoFrameCallbackId) videoEl.cancelVideoFrameCallback(videoFrameCallbackId);

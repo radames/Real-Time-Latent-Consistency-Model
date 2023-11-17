@@ -15,7 +15,7 @@
     onFrameChangeStore,
     MediaStreamStatusEnum
   } from '$lib/mediaStream';
-  import { pipelineValues } from '$lib/store';
+  import { getPipelineValues } from '$lib/store';
 
   let pipelineParams: FieldProps[];
   let pipelineInfo: PipelineInfo;
@@ -33,17 +33,8 @@
     isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
     maxQueueSize = settings.max_queue_size;
     pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
-    console.log('PARAMS', pipelineParams);
-    console.log('SETTINGS', pipelineInfo);
   }
-  console.log('isImageMode', isImageMode);
 
-  $: {
-    console.log('lcmLiveState', $lcmLiveStatus);
-  }
-  $: {
-    console.log('mediaStreamState', $mediaStreamStatus);
-  }
   // send Webcam stream to LCM if image mode
   $: {
     if (
@@ -51,7 +42,7 @@
       $lcmLiveStatus === LCMLiveStatus.CONNECTED &&
       $mediaStreamStatus === MediaStreamStatusEnum.CONNECTED
     ) {
-      lcmLiveActions.send($pipelineValues);
+      lcmLiveActions.send(getPipelineValues());
       lcmLiveActions.send($onFrameChangeStore.blob);
     }
   }
@@ -67,13 +58,16 @@
   //     lcmLiveActions.send($pipelineValues);
   //   }
   // }
+  let disabled = false;
   async function toggleLcmLive() {
     if (!isLCMRunning) {
       if (isImageMode) {
         await mediaStreamActions.enumerateDevices();
         await mediaStreamActions.start();
       }
+      disabled = true;
       await lcmLiveActions.start();
+      disabled = false;
     } else {
       if (isImageMode) {
         mediaStreamActions.stop();
@@ -126,7 +120,7 @@
     </header>
     <PipelineOptions {pipelineParams}></PipelineOptions>
     <div class="flex gap-3">
-      <Button on:click={toggleLcmLive}>
+      <Button on:click={toggleLcmLive} {disabled}>
         {#if isLCMRunning}
           Stop
         {:else}
