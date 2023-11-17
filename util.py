@@ -2,6 +2,8 @@ from importlib import import_module
 from types import ModuleType
 from typing import Dict, Any
 from pydantic import BaseModel as PydanticBaseModel, Field
+from PIL import Image
+import io
 
 
 def get_pipeline_class(pipeline_name: str) -> ModuleType:
@@ -16,3 +18,20 @@ def get_pipeline_class(pipeline_name: str) -> ModuleType:
         raise ValueError(f"'Pipeline' class not found in module '{pipeline_name}'.")
 
     return pipeline_class
+
+
+def pil_to_frame(image: Image.Image) -> bytes:
+    frame_data = io.BytesIO()
+    image.save(frame_data, format="JPEG")
+    frame_data = frame_data.getvalue()
+    return (
+        b"--frame\r\n"
+        + b"Content-Type: image/jpeg\r\n"
+        + f"Content-Length: {len(frame_data)}\r\n\r\n".encode()
+        + frame_data
+        + b"\r\n"
+    )
+
+
+def is_firefox(user_agent: str) -> bool:
+    return "Firefox" in user_agent

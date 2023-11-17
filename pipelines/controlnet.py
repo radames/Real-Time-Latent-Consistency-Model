@@ -28,6 +28,7 @@ class Pipeline:
     class Info(BaseModel):
         name: str = "txt2img"
         description: str = "Generates an image from a text prompt"
+        input_mode: str = "image"
 
     class InputParams(BaseModel):
         prompt: str = Field(
@@ -125,7 +126,6 @@ class Pipeline:
             hide=True,
             id="debug_canny",
         )
-        image: bool = True
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
         controlnet_canny = ControlNetModel.from_pretrained(

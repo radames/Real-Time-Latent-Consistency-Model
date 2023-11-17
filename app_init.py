@@ -2,6 +2,7 @@ from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi import Request
 
 import logging
 import traceback
@@ -11,8 +12,8 @@ import uuid
 from asyncio import Event, sleep
 import time
 from PIL import Image
-import io
 from types import SimpleNamespace
+from util import pil_to_frame, is_firefox
 
 
 def init_app(app: FastAPI, user_data_events: UserDataEventMap, args: Args, pipeline):
@@ -23,7 +24,6 @@ def init_app(app: FastAPI, user_data_events: UserDataEventMap, args: Args, pipel
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    print("Init app", app)
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
@@ -41,7 +41,6 @@ def init_app(app: FastAPI, user_data_events: UserDataEventMap, args: Args, pipel
                 {"status": "success", "message": "Connected", "userId": uid}
             )
             user_data_events[uid] = UserDataEvent()
-            print(f"User data events: {user_data_events}")
             await websocket.send_json(
                 {"status": "start", "message": "Start Streaming", "userId": uid}
             )
@@ -59,31 +58,27 @@ def init_app(app: FastAPI, user_data_events: UserDataEventMap, args: Args, pipel
         return JSONResponse({"queue_size": queue_size})
 
     @app.get("/stream/{user_id}")
-    async def stream(user_id: uuid.UUID):
+    async def stream(user_id: uuid.UUID, request: Request):
         uid = str(user_id)
         try:
 
             async def generate():
-                last_prompt: str = None
                 while True:
                     data = await user_data_events[uid].wait_for_data()
                     params = data["params"]
-                    # input_image = data["image"]
-                    # if input_image is None:
-                    # continue
                     image = pipeline.predict(params)
                     if image is None:
                         continue
-                    frame_data = io.BytesIO()
-                    image.save(frame_data, format="JPEG")
-                    frame_data = frame_data.getvalue()
-                    if frame_data is not None and len(frame_data) > 0:
-                        yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_data + b"\r\n"
-
-                    await sleep(1.0 / 120.0)
+                    frame = pil_to_frame(image)
+                    yield frame
+                    # https://bugs.chromium.org/p/chromium/issues/detail?id=1250396
+                    if not is_firefox(request.headers["user-agent"]):
+                        yield frame
 
             return StreamingResponse(
-                generate(), media_type="multipart/x-mixed-replace;boundary=frame"
+                generate(),
+                media_type="multipart/x-mixed-replace;boundary=frame",
+                headers={"Cache-Control": "no-cache"},
             )
         except Exception as e:
             logging.error(f"Streaming Error: {e}, {user_data_events}")
@@ -99,8 +94,9 @@ def init_app(app: FastAPI, user_data_events: UserDataEventMap, args: Args, pipel
             while True:
                 params = await websocket.receive_json()
                 params = pipeline.InputParams(**params)
+                info = pipeline.Info()
                 params = SimpleNamespace(**params.dict())
-                if hasattr(params, "image"):
+                if info.input_mode == "image":
                     image_data = await websocket.receive_bytes()
                     pil_image = Image.open(io.BytesIO(image_data))
                     params.image = pil_image
@@ -125,6 +121,12 @@ def init_app(app: FastAPI, user_data_events: UserDataEventMap, args: Args, pipel
     async def settings():
         info = pipeline.Info.schema()
         input_params = pipeline.InputParams.schema()
-        return JSONResponse({"info": info, "input_params": input_params})
+        return JSONResponse(
+            {
+                "info": info,
+                "input_params": input_params,
+                "max_queue_size": args.max_queue_size,
+            }
+        )
 
     app.mount("/", StaticFiles(directory="public", html=True), name="public")

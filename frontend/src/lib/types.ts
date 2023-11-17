@@ -4,6 +4,11 @@ export const enum FieldType {
     textarea = "textarea",
     checkbox = "checkbox",
 }
+export const enum PipelineMode {
+    image = "image",
+    video = "video",
+    text = "text",
+}
 
 export interface FieldProps {
     default: number | string;
@@ -19,5 +24,7 @@ export interface FieldProps {
 export interface PipelineInfo {
     name: string;
     description: string;
-    mode: string;
+    input_mode: {
+        default: PipelineMode;
+    }
 }

@@ -8,7 +8,7 @@
   });
 </script>
 
-<div class="grid grid-cols-4 items-center gap-3">
+<div class="grid max-w-md grid-cols-4 items-center gap-3">
   <label class="text-sm font-medium" for={params.id}>{params?.title}</label>
   <input
     class="col-span-2 h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 dark:bg-gray-500"

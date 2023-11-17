@@ -22,6 +22,7 @@ class Pipeline:
     class Info(BaseModel):
         name: str = "txt2img"
         description: str = "Generates an image from a text prompt"
+        input_mode: str = "text"
 
     class InputParams(BaseModel):
         prompt: str = Field(
@@ -51,9 +52,6 @@ class Pipeline:
             field="range",
             hide=True,
             id="guidance_scale",
-        )
-        image: bool = Field(
-            True, title="Image", field="checkbox", hide=True, id="image"
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):

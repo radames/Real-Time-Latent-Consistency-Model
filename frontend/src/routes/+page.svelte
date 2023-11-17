@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import type { FieldProps, PipelineInfo } from '$lib/types';
+  import { PipelineMode } from '$lib/types';
   import ImagePlayer from '$lib/components/ImagePlayer.svelte';
   import VideoInput from '$lib/components/VideoInput.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -14,10 +15,12 @@
     isMediaStreaming,
     onFrameChangeStore
   } from '$lib/mediaStream';
+  import { pipelineValues } from '$lib/store';
 
   let pipelineParams: FieldProps[];
   let pipelineInfo: PipelineInfo;
-  let pipelineValues = {};
+  let isImageMode: boolean = false;
+  let maxQueueSize: number = 0;
 
   onMount(() => {
     getSettings();
@@ -27,59 +30,41 @@
     const settings = await fetch(`${PUBLIC_BASE_URL}/settings`).then((r) => r.json());
     pipelineParams = Object.values(settings.input_params.properties);
     pipelineInfo = settings.info.properties;
+    isImageMode = pipelineInfo.input_mode.default === PipelineMode.image;
+    maxQueueSize = settings.max_queue_size;
     pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
     console.log('PARAMS', pipelineParams);
     console.log('SETTINGS', pipelineInfo);
   }
+  console.log('isImageMode', isImageMode);
 
-  // $: {
-  //   console.log('isLCMRunning', $isLCMRunning);
-  // }
-  // $: {
-  //   console.log('lcmLiveState', $lcmLiveState);
-  // }
-  // $: {
-  //   console.log('mediaStreamState', $mediaStreamState);
-  // }
-  // $: if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
-  //   lcmLiveActions.send(pipelineValues);
-  // }
-  onFrameChangeStore.subscribe(async (frame) => {
-    if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
-      lcmLiveActions.send(pipelineValues);
-      lcmLiveActions.send(frame.blob);
+  // send Webcam stream to LCM if image mode
+  $: {
+    if (isImageMode && $lcmLiveState.status === LCMLiveStatus.CONNECTED) {
+      lcmLiveActions.send($pipelineValues);
+      lcmLiveActions.send($onFrameChangeStore.blob);
     }
-  });
-  let startBt: Button;
-  let stopBt: Button;
-  let snapShotBt: Button;
+  }
 
+  // send Webcam stream to LCM
+  $: {
+    if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
+      lcmLiveActions.send($pipelineValues);
+    }
+  }
   async function toggleLcmLive() {
     if (!$isLCMRunning) {
-      await mediaStreamActions.enumerateDevices();
-      await mediaStreamActions.start();
-      lcmLiveActions.start();
+      if (isImageMode) {
+        await mediaStreamActions.enumerateDevices();
+        await mediaStreamActions.start();
+      }
+      await lcmLiveActions.start();
     } else {
-      mediaStreamActions.stop();
+      if (isImageMode) {
+        mediaStreamActions.stop();
+      }
       lcmLiveActions.stop();
     }
-  }
-  async function startLcmLive() {
-    try {
-      $isLCMRunning = true;
-      // const res = await lcmLive.start();
-      $isLCMRunning = false;
-      // if (res.status === "timeout")
-      // toggleMessage("success")
-    } catch (err) {
-      console.log(err);
-      // toggleMessage("error")
-      $isLCMRunning = false;
-    }
-  }
-  async function stopLcmLive() {
-    // await lcmLive.stop();
-    $isLCMRunning = false;
   }
 </script>
 
@@ -87,29 +72,31 @@
 <main class="container mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4">
   <article class="flex- mx-auto max-w-xl text-center">
     <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
-    <p class="text-sm">
+    <p class="py-2 text-sm">
       This demo showcases
       <a
-        href="https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7"
+        href="https://huggingface.co/blog/lcm_lora"
         target="_blank"
-        class="text-blue-500 underline hover:no-underline">LCM</a
+        class="text-blue-500 underline hover:no-underline">LCM LoRA</a
       >
       Image to Image pipeline using
       <a
-        href="https://github.com/huggingface/diffusers/tree/main/examples/community#latent-consistency-pipeline"
+        href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
         target="_blank"
         class="text-blue-500 underline hover:no-underline">Diffusers</a
       > with a MJPEG stream server.
     </p>
-    <p class="text-sm">
-      There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU,
-      affecting real-time performance. Maximum queue size is 4.
-      <a
-        href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
-        target="_blank"
-        class="text-blue-500 underline hover:no-underline">Duplicate</a
-      > and run it on your own GPU.
-    </p>
+    {#if maxQueueSize > 0}
+      <p class="text-sm">
+        There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU,
+        affecting real-time performance. Maximum queue size is {maxQueueSize}.
+        <a
+          href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
+          target="_blank"
+          class="text-blue-500 underline hover:no-underline">Duplicate</a
+        > and run it on your own GPU.
+      </p>
+    {/if}
   </article>
   {#if pipelineParams}
     <header>
@@ -122,7 +109,7 @@
         > syntax.
       </p>
     </header>
-    <PipelineOptions {pipelineParams} bind:pipelineValues></PipelineOptions>
+    <PipelineOptions {pipelineParams}></PipelineOptions>
     <div class="flex gap-3">
       <Button on:click={toggleLcmLive}>
         {#if $isLCMRunning}
@@ -135,7 +122,9 @@
     </div>
 
     <ImagePlayer>
-      <VideoInput></VideoInput>
+      {#if isImageMode}
+        <VideoInput></VideoInput>
+      {/if}
     </ImagePlayer>
   {:else}
     <!-- loading -->
