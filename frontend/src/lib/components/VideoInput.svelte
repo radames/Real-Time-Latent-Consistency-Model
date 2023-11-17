@@ -1,42 +1,38 @@
 <script lang="ts">
   import 'rvfc-polyfill';
-  import { onMount, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import {
-    mediaStreamState,
-    mediaStreamActions,
-    isMediaStreaming,
-    MediaStreamStatus,
-    onFrameChangeStore
+    mediaStreamStatus,
+    MediaStreamStatusEnum,
+    onFrameChangeStore,
+    mediaStream
   } from '$lib/mediaStream';
-
-  $: mediaStream = $mediaStreamState.mediaStream;
 
   let videoEl: HTMLVideoElement;
   let videoFrameCallbackId: number;
   const WIDTH = 512;
   const HEIGHT = 512;
+  const THROTTLE_FPS = 10;
 
   onDestroy(() => {
     if (videoFrameCallbackId) videoEl.cancelVideoFrameCallback(videoFrameCallbackId);
   });
 
-  function srcObject(node: HTMLVideoElement, stream: MediaStream) {
-    node.srcObject = stream;
-    return {
-      update(newStream: MediaStream) {
-        if (node.srcObject != newStream) {
-          node.srcObject = newStream;
-        }
-      }
-    };
+  $: if (videoEl) {
+    videoEl.srcObject = $mediaStream;
   }
+
+  let last_millis = 0;
   async function onFrameChange(now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
-    const blob = await grapBlobImg();
-    onFrameChangeStore.set({ now, metadata, blob });
+    if (now - last_millis > 1000 / THROTTLE_FPS) {
+      const blob = await grapBlobImg();
+      onFrameChangeStore.set({ now, metadata, blob });
+      last_millis = now;
+    }
     videoFrameCallbackId = videoEl.requestVideoFrameCallback(onFrameChange);
   }
 
-  $: if ($isMediaStreaming == MediaStreamStatus.CONNECTED) {
+  $: if ($mediaStreamStatus == MediaStreamStatusEnum.CONNECTED) {
     videoFrameCallbackId = videoEl.requestVideoFrameCallback(onFrameChange);
   }
   async function grapBlobImg() {
@@ -70,7 +66,6 @@
     autoplay
     muted
     loop
-    use:srcObject={mediaStream}
   ></video>
 </div>
 <svg

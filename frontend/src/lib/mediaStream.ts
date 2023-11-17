@@ -1,38 +1,23 @@
 import { writable, type Writable } from 'svelte/store';
 
-export enum MediaStreamStatus {
+export enum MediaStreamStatusEnum {
     INIT = "init",
     CONNECTED = "connected",
     DISCONNECTED = "disconnected",
 }
 export const onFrameChangeStore: Writable<{ now: Number, metadata: VideoFrameCallbackMetadata, blob: Blob }> = writable();
-export const isMediaStreaming = writable(MediaStreamStatus.INIT);
 
-interface mediaStream {
-    mediaStream: MediaStream | null;
-    status: MediaStreamStatus
-    devices: MediaDeviceInfo[];
-}
-
-const initialState: mediaStream = {
-    mediaStream: null,
-    status: MediaStreamStatus.INIT,
-    devices: [],
-};
-
-export const mediaStreamState = writable(initialState);
+export const mediaDevices = writable<MediaDeviceInfo[]>([]);
+export const mediaStreamStatus = writable(MediaStreamStatusEnum.INIT);
+export const mediaStream = writable<MediaStream | null>(null);
 
 export const mediaStreamActions = {
     async enumerateDevices() {
-        console.log("Enumerating devices");
+        // console.log("Enumerating devices");
         await navigator.mediaDevices.enumerateDevices()
             .then(devices => {
                 const cameras = devices.filter(device => device.kind === 'videoinput');
-                console.log("Cameras: ", cameras);
-                mediaStreamState.update((state) => ({
-                    ...state,
-                    devices: cameras,
-                }));
+                mediaDevices.set(cameras);
             })
             .catch(err => {
                 console.error(err);
@@ -48,17 +33,14 @@ export const mediaStreamActions = {
 
         await navigator.mediaDevices
             .getUserMedia(constraints)
-            .then((mediaStream) => {
-                mediaStreamState.update((state) => ({
-                    ...state,
-                    mediaStream: mediaStream,
-                    status: MediaStreamStatus.CONNECTED,
-                }));
-                isMediaStreaming.set(MediaStreamStatus.CONNECTED);
+            .then((stream) => {
+                mediaStreamStatus.set(MediaStreamStatusEnum.CONNECTED);
+                mediaStream.set(stream);
             })
             .catch((err) => {
                 console.error(`${err.name}: ${err.message}`);
-                isMediaStreaming.set(MediaStreamStatus.DISCONNECTED);
+                mediaStreamStatus.set(MediaStreamStatusEnum.DISCONNECTED);
+                mediaStream.set(null);
             });
     },
     async switchCamera(mediaDevicedID: string) {
@@ -68,26 +50,19 @@ export const mediaStreamActions = {
         };
         await navigator.mediaDevices
             .getUserMedia(constraints)
-            .then((mediaStream) => {
-                mediaStreamState.update((state) => ({
-                    ...state,
-                    mediaStream: mediaStream,
-                    status: MediaStreamStatus.CONNECTED,
-                }));
+            .then((stream) => {
+                mediaStreamStatus.set(MediaStreamStatusEnum.CONNECTED);
+                mediaStream.set(stream)
             })
             .catch((err) => {
                 console.error(`${err.name}: ${err.message}`);
             });
     },
     async stop() {
-        navigator.mediaDevices.getUserMedia({ video: true }).then((mediaStream) => {
-            mediaStream.getTracks().forEach((track) => track.stop());
+        navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+            stream.getTracks().forEach((track) => track.stop());
         });
-        mediaStreamState.update((state) => ({
-            ...state,
-            mediaStream: null,
-            status: MediaStreamStatus.DISCONNECTED,
-        }));
-        isMediaStreaming.set(MediaStreamStatus.DISCONNECTED);
+        mediaStreamStatus.set(MediaStreamStatusEnum.DISCONNECTED);
+        mediaStream.set(null);
     },
 };

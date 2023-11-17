@@ -20,6 +20,11 @@ def get_pipeline_class(pipeline_name: str) -> ModuleType:
     return pipeline_class
 
 
+def bytes_to_pil(image_bytes: bytes) -> Image.Image:
+    image = Image.open(io.BytesIO(image_bytes))
+    return image
+
+
 def pil_to_frame(image: Image.Image) -> bytes:
     frame_data = io.BytesIO()
     image.save(frame_data, format="JPEG")

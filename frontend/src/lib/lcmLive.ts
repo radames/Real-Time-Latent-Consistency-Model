@@ -1,27 +1,17 @@
 import { writable } from 'svelte/store';
 import { PUBLIC_WSS_URL } from '$env/static/public';
 
-export const isStreaming = writable(false);
-export const isLCMRunning = writable(false);
-
 
 export enum LCMLiveStatus {
-    INIT = "init",
     CONNECTED = "connected",
     DISCONNECTED = "disconnected",
+    WAIT = "wait",
 }
 
-interface lcmLive {
-    streamId: string | null;
-    status: LCMLiveStatus
-}
+const initStatus: LCMLiveStatus = LCMLiveStatus.DISCONNECTED;
 
-const initialState: lcmLive = {
-    streamId: null,
-    status: LCMLiveStatus.INIT
-};
-
-export const lcmLiveState = writable(initialState);
+export const lcmLiveStatus = writable<LCMLiveStatus>(initStatus);
+export const streamId = writable<string | null>(null);
 
 let websocket: WebSocket | null = null;
 export const lcmLiveActions = {
@@ -37,12 +27,8 @@ export const lcmLiveActions = {
                     console.log("Connected to websocket");
                 };
                 websocket.onclose = () => {
-                    lcmLiveState.update((state) => ({
-                        ...state,
-                        status: LCMLiveStatus.DISCONNECTED
-                    }));
+                    lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
                     console.log("Disconnected from websocket");
-                    isLCMRunning.set(false);
                 };
                 websocket.onerror = (err) => {
                     console.error(err);
@@ -51,47 +37,29 @@ export const lcmLiveActions = {
                     const data = JSON.parse(event.data);
                     console.log("WS: ", data);
                     switch (data.status) {
-                        case "success":
-                            break;
-                        case "start":
-                            const streamId = data.userId;
-                            lcmLiveState.update((state) => ({
-                                ...state,
-                                status: LCMLiveStatus.CONNECTED,
-                                streamId: streamId,
-                            }));
-                            isLCMRunning.set(true);
-                            resolve(streamId);
+                        case "connected":
+                            const userId = data.userId;
+                            lcmLiveStatus.set(LCMLiveStatus.CONNECTED);
+                            streamId.set(userId);
                             break;
                         case "timeout":
                             console.log("timeout");
-                            isLCMRunning.set(false);
-                            lcmLiveState.update((state) => ({
-                                ...state,
-                                status: LCMLiveStatus.DISCONNECTED,
-                                streamId: null,
-                            }));
+                            lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
+                            streamId.set(null);
                             reject("timeout");
                         case "error":
                             console.log(data.message);
-                            isLCMRunning.set(false);
-                            lcmLiveState.update((state) => ({
-                                ...state,
-                                status: LCMLiveStatus.DISCONNECTED,
-                                streamId: null,
-                            }));
+                            lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
+                            streamId.set(null);
                             reject(data.message);
                     }
                 };
 
             } catch (err) {
                 console.error(err);
-                isLCMRunning.set(false);
-                lcmLiveState.update((state) => ({
-                    ...state,
-                    status: LCMLiveStatus.DISCONNECTED,
-                    streamId: null,
-                }));
+                lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
+                streamId.set(null);
+
                 reject(err);
             }
         });
@@ -113,7 +81,7 @@ export const lcmLiveActions = {
             websocket.close();
         }
         websocket = null;
-        lcmLiveState.set({ status: LCMLiveStatus.DISCONNECTED, streamId: null });
-        isLCMRunning.set(false)
+        lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
+        streamId.set(null);
     },
 };

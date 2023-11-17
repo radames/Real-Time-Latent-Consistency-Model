@@ -8,12 +8,12 @@
   import Button from '$lib/components/Button.svelte';
   import PipelineOptions from '$lib/components/PipelineOptions.svelte';
   import Spinner from '$lib/icons/spinner.svelte';
-  import { isLCMRunning, lcmLiveState, lcmLiveActions, LCMLiveStatus } from '$lib/lcmLive';
+  import { lcmLiveStatus, lcmLiveActions, LCMLiveStatus } from '$lib/lcmLive';
   import {
-    mediaStreamState,
     mediaStreamActions,
-    isMediaStreaming,
-    onFrameChangeStore
+    mediaStreamStatus,
+    onFrameChangeStore,
+    MediaStreamStatusEnum
   } from '$lib/mediaStream';
   import { pipelineValues } from '$lib/store';
 
@@ -30,7 +30,7 @@
     const settings = await fetch(`${PUBLIC_BASE_URL}/settings`).then((r) => r.json());
     pipelineParams = Object.values(settings.input_params.properties);
     pipelineInfo = settings.info.properties;
-    isImageMode = pipelineInfo.input_mode.default === PipelineMode.image;
+    isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
     maxQueueSize = settings.max_queue_size;
     pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
     console.log('PARAMS', pipelineParams);
@@ -38,22 +38,37 @@
   }
   console.log('isImageMode', isImageMode);
 
+  $: {
+    console.log('lcmLiveState', $lcmLiveStatus);
+  }
+  $: {
+    console.log('mediaStreamState', $mediaStreamStatus);
+  }
   // send Webcam stream to LCM if image mode
   $: {
-    if (isImageMode && $lcmLiveState.status === LCMLiveStatus.CONNECTED) {
+    if (
+      isImageMode &&
+      $lcmLiveStatus === LCMLiveStatus.CONNECTED &&
+      $mediaStreamStatus === MediaStreamStatusEnum.CONNECTED
+    ) {
       lcmLiveActions.send($pipelineValues);
       lcmLiveActions.send($onFrameChangeStore.blob);
     }
   }
 
-  // send Webcam stream to LCM
-  $: {
-    if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
-      lcmLiveActions.send($pipelineValues);
-    }
-  }
+  $: isLCMRunning = $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED;
+  // $: {
+  //   console.log('onFrameChangeStore', $onFrameChangeStore);
+  // }
+
+  // // send Webcam stream to LCM
+  // $: {
+  //   if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
+  //     lcmLiveActions.send($pipelineValues);
+  //   }
+  // }
   async function toggleLcmLive() {
-    if (!$isLCMRunning) {
+    if (!isLCMRunning) {
       if (isImageMode) {
         await mediaStreamActions.enumerateDevices();
         await mediaStreamActions.start();
@@ -112,13 +127,13 @@
     <PipelineOptions {pipelineParams}></PipelineOptions>
     <div class="flex gap-3">
       <Button on:click={toggleLcmLive}>
-        {#if $isLCMRunning}
+        {#if isLCMRunning}
           Stop
         {:else}
           Start
         {/if}
       </Button>
-      <Button disabled={$isLCMRunning} classList={'ml-auto'}>Snapshot</Button>
+      <Button disabled={isLCMRunning} classList={'ml-auto'}>Snapshot</Button>
     </div>
 
     <ImagePlayer>
