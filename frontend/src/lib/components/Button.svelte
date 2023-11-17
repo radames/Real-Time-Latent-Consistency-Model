@@ -1,8 +1,9 @@
 <script lang="ts">
   export let classList: string = '';
+  export let disabled: boolean = false;
 </script>
 
-<button class="button {classList}" on:click>
+<button class="button {classList}" on:click {disabled}>
   <slot />
 </button>
 

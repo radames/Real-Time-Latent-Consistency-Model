@@ -6,15 +6,16 @@ from fastapi.staticfiles import StaticFiles
 import logging
 import traceback
 from config import Args
-from user_queue import UserQueueDict
+from user_queue import UserDataEventMap, UserDataEvent
 import uuid
-import asyncio
+from asyncio import Event, sleep
 import time
 from PIL import Image
 import io
+from types import SimpleNamespace
 
 
-def init_app(app: FastAPI, user_queue_map: UserQueueDict, args: Args, pipeline):
+def init_app(app: FastAPI, user_data_events: UserDataEventMap, args: Args, pipeline):
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -27,19 +28,20 @@ def init_app(app: FastAPI, user_queue_map: UserQueueDict, args: Args, pipeline):
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
         await websocket.accept()
-        if args.max_queue_size > 0 and len(user_queue_map) >= args.max_queue_size:
+        if args.max_queue_size > 0 and len(user_data_events) >= args.max_queue_size:
             print("Server is full")
             await websocket.send_json({"status": "error", "message": "Server is full"})
             await websocket.close()
             return
 
         try:
-            uid = uuid.uuid4()
+            uid = str(uuid.uuid4())
             print(f"New user connected: {uid}")
             await websocket.send_json(
                 {"status": "success", "message": "Connected", "userId": uid}
             )
-            user_queue_map[uid] = {"queue": asyncio.Queue()}
+            user_data_events[uid] = UserDataEvent()
+            print(f"User data events: {user_data_events}")
             await websocket.send_json(
                 {"status": "start", "message": "Start Streaming", "userId": uid}
             )
@@ -49,40 +51,27 @@ def init_app(app: FastAPI, user_queue_map: UserQueueDict, args: Args, pipeline):
             traceback.print_exc()
         finally:
             print(f"User disconnected: {uid}")
-            queue_value = user_queue_map.pop(uid, None)
-            queue = queue_value.get("queue", None)
-            if queue:
-                while not queue.empty():
-                    try:
-                        queue.get_nowait()
-                    except asyncio.QueueEmpty:
-                        continue
+            del user_data_events[uid]
 
     @app.get("/queue_size")
     async def get_queue_size():
-        queue_size = len(user_queue_map)
+        queue_size = len(user_data_events)
         return JSONResponse({"queue_size": queue_size})
 
     @app.get("/stream/{user_id}")
     async def stream(user_id: uuid.UUID):
-        uid = user_id
+        uid = str(user_id)
         try:
-            user_queue = user_queue_map[uid]
-            queue = user_queue["queue"]
 
             async def generate():
                 last_prompt: str = None
                 while True:
-                    data = await queue.get()
-                    input_image = data["image"]
+                    data = await user_data_events[uid].wait_for_data()
                     params = data["params"]
-                    if input_image is None:
-                        continue
-
-                    image = pipeline.predict(
-                        input_image,
-                        params,
-                    )
+                    # input_image = data["image"]
+                    # if input_image is None:
+                    # continue
+                    image = pipeline.predict(params)
                     if image is None:
                         continue
                     frame_data = io.BytesIO()
@@ -91,36 +80,31 @@ def init_app(app: FastAPI, user_queue_map: UserQueueDict, args: Args, pipeline):
                     if frame_data is not None and len(frame_data) > 0:
                         yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_data + b"\r\n"
 
-                    await asyncio.sleep(1.0 / 120.0)
+                    await sleep(1.0 / 120.0)
 
             return StreamingResponse(
                 generate(), media_type="multipart/x-mixed-replace;boundary=frame"
             )
         except Exception as e:
-            logging.error(f"Streaming Error: {e}, {user_queue_map}")
+            logging.error(f"Streaming Error: {e}, {user_data_events}")
             traceback.print_exc()
             return HTTPException(status_code=404, detail="User not found")
 
     async def handle_websocket_data(websocket: WebSocket, user_id: uuid.UUID):
-        uid = user_id
-        user_queue = user_queue_map[uid]
-        queue = user_queue["queue"]
-        if not queue:
+        uid = str(user_id)
+        if uid not in user_data_events:
             return HTTPException(status_code=404, detail="User not found")
         last_time = time.time()
         try:
             while True:
-                data = await websocket.receive_bytes()
                 params = await websocket.receive_json()
                 params = pipeline.InputParams(**params)
-                pil_image = Image.open(io.BytesIO(data))
-
-                while not queue.empty():
-                    try:
-                        queue.get_nowait()
-                    except asyncio.QueueEmpty:
-                        continue
-                await queue.put({"image": pil_image, "params": params})
+                params = SimpleNamespace(**params.dict())
+                if hasattr(params, "image"):
+                    image_data = await websocket.receive_bytes()
+                    pil_image = Image.open(io.BytesIO(image_data))
+                    params.image = pil_image
+                user_data_events[uid].update_data({"params": params})
                 if args.timeout > 0 and time.time() - last_time > args.timeout:
                     await websocket.send_json(
                         {

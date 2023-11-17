@@ -2,6 +2,7 @@ export const enum FieldType {
     range = "range",
     seed = "seed",
     textarea = "textarea",
+    checkbox = "checkbox",
 }
 
 export interface FieldProps {
@@ -13,6 +14,7 @@ export interface FieldProps {
     step?: number;
     disabled?: boolean;
     hide?: boolean;
+    id: string;
 }
 export interface PipelineInfo {
     name: string;

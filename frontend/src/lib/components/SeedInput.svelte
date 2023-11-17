@@ -16,5 +16,5 @@
     name="seed"
     class="col-span-2 rounded-md border border-gray-700 p-2 text-right font-light dark:text-black"
   />
-  <Button on:click={randomize}>Randomize</Button>
+  <Button on:click={randomize}>Rand</Button>
 </div>

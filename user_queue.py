@@ -1,18 +1,29 @@
 from typing import Dict, Union
 from uuid import UUID
-from asyncio import Queue
+import asyncio
 from PIL import Image
-from typing import Tuple, Union
-from uuid import UUID
-from asyncio import Queue
+from typing import Dict, Union
 from PIL import Image
-
-UserId = UUID
 
 InputParams = dict
+UserId = UUID
+EventDataContent = Dict[str, InputParams]
 
-QueueContent = Dict[str, Union[Image.Image, InputParams]]
 
-UserQueueDict = Dict[UserId, Queue[QueueContent]]
+class UserDataEvent:
+    def __init__(self):
+        self.data_event = asyncio.Event()
+        self.data_content: EventDataContent = {}
 
-user_queue_map: UserQueueDict = {}
+    def update_data(self, new_data: EventDataContent):
+        self.data_content = new_data
+        self.data_event.set()
+
+    async def wait_for_data(self) -> EventDataContent:
+        await self.data_event.wait()
+        self.data_event.clear()
+        return self.data_content
+
+
+UserDataEventMap = Dict[UserId, UserDataEvent]
+user_data_events: UserDataEventMap = {}

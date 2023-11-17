@@ -11,7 +11,6 @@ import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
-from typing import Callable
 
 base_model = "SimianLuo/LCM_Dreamshaper_v7"
 taesd_model = "madebyollin/taesd"
@@ -29,22 +28,19 @@ class Pipeline:
             default_prompt,
             title="Prompt",
             field="textarea",
+            id="prompt",
         )
-        seed: int = Field(2159232, min=0, title="Seed", field="seed", hide=True)
-        strength: float = Field(
-            0.5,
-            min=0,
-            max=1,
-            step=0.001,
-            title="Strength",
-            field="range",
-            hide=True,
+        seed: int = Field(
+            2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
-
-        steps: int = Field(4, min=2, max=15, title="Steps", field="range", hide=True)
-        width: int = Field(512, min=2, max=15, title="Width", disabled=True, hide=True)
+        steps: int = Field(
+            4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
+        )
+        width: int = Field(
+            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+        )
         height: int = Field(
-            512, min=2, max=15, title="Height", disabled=True, hide=True
+            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             8.0,
@@ -54,6 +50,10 @@ class Pipeline:
             title="Guidance Scale",
             field="range",
             hide=True,
+            id="guidance_scale",
+        )
+        image: bool = Field(
+            True, title="Image", field="checkbox", hide=True, id="image"
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):

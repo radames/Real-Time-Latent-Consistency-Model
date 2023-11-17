@@ -1,12 +1,18 @@
 <script lang="ts">
+  import { isLCMRunning, lcmLiveState, lcmLiveActions } from '$lib/lcmLive';
+  import { onFrameChangeStore } from '$lib/mediaStream';
+  import { PUBLIC_BASE_URL } from '$env/static/public';
+
+  $: streamId = $lcmLiveState.streamId;
 </script>
 
 <div class="relative overflow-hidden rounded-lg border border-slate-300">
   <!-- svelte-ignore a11y-missing-attribute -->
-  <img
-    class="aspect-square w-full rounded-lg"
-    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-  />
+  {#if $isLCMRunning}
+    <img class="aspect-square w-full rounded-lg" src={PUBLIC_BASE_URL + '/stream/' + streamId} />
+  {:else}
+    <div class="aspect-square w-full rounded-lg" />
+  {/if}
   <div class="absolute left-0 top-0 aspect-square w-1/4">
     <div class="relative z-10 aspect-square w-full object-cover">
       <slot />

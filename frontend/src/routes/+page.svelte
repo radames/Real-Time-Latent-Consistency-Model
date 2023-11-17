@@ -7,6 +7,13 @@
   import Button from '$lib/components/Button.svelte';
   import PipelineOptions from '$lib/components/PipelineOptions.svelte';
   import Spinner from '$lib/icons/spinner.svelte';
+  import { isLCMRunning, lcmLiveState, lcmLiveActions, LCMLiveStatus } from '$lib/lcmLive';
+  import {
+    mediaStreamState,
+    mediaStreamActions,
+    isMediaStreaming,
+    onFrameChangeStore
+  } from '$lib/mediaStream';
 
   let pipelineParams: FieldProps[];
   let pipelineInfo: PipelineInfo;
@@ -21,11 +28,58 @@
     pipelineParams = Object.values(settings.input_params.properties);
     pipelineInfo = settings.info.properties;
     pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
+    console.log('PARAMS', pipelineParams);
     console.log('SETTINGS', pipelineInfo);
   }
 
-  $: {
-    console.log('PARENT', pipelineValues);
+  // $: {
+  //   console.log('isLCMRunning', $isLCMRunning);
+  // }
+  // $: {
+  //   console.log('lcmLiveState', $lcmLiveState);
+  // }
+  // $: {
+  //   console.log('mediaStreamState', $mediaStreamState);
+  // }
+  // $: if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
+  //   lcmLiveActions.send(pipelineValues);
+  // }
+  onFrameChangeStore.subscribe(async (frame) => {
+    if ($lcmLiveState.status === LCMLiveStatus.CONNECTED) {
+      lcmLiveActions.send(pipelineValues);
+      lcmLiveActions.send(frame.blob);
+    }
+  });
+  let startBt: Button;
+  let stopBt: Button;
+  let snapShotBt: Button;
+
+  async function toggleLcmLive() {
+    if (!$isLCMRunning) {
+      await mediaStreamActions.enumerateDevices();
+      await mediaStreamActions.start();
+      lcmLiveActions.start();
+    } else {
+      mediaStreamActions.stop();
+      lcmLiveActions.stop();
+    }
+  }
+  async function startLcmLive() {
+    try {
+      $isLCMRunning = true;
+      // const res = await lcmLive.start();
+      $isLCMRunning = false;
+      // if (res.status === "timeout")
+      // toggleMessage("success")
+    } catch (err) {
+      console.log(err);
+      // toggleMessage("error")
+      $isLCMRunning = false;
+    }
+  }
+  async function stopLcmLive() {
+    // await lcmLive.stop();
+    $isLCMRunning = false;
   }
 </script>
 
@@ -58,19 +112,26 @@
     </p>
   </article>
   {#if pipelineParams}
-    <h2 class="font-medium">Prompt</h2>
-    <p class="text-sm text-gray-500">
-      Change the prompt to generate different images, accepts <a
-        href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
-        target="_blank"
-        class="text-blue-500 underline hover:no-underline">Compel</a
-      > syntax.
-    </p>
+    <header>
+      <h2 class="font-medium">Prompt</h2>
+      <p class="text-sm text-gray-500">
+        Change the prompt to generate different images, accepts <a
+          href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+          target="_blank"
+          class="text-blue-500 underline hover:no-underline">Compel</a
+        > syntax.
+      </p>
+    </header>
     <PipelineOptions {pipelineParams} bind:pipelineValues></PipelineOptions>
     <div class="flex gap-3">
-      <Button>Start</Button>
-      <Button>Stop</Button>
-      <Button classList={'ml-auto'}>Snapshot</Button>
+      <Button on:click={toggleLcmLive}>
+        {#if $isLCMRunning}
+          Stop
+        {:else}
+          Start
+        {/if}
+      </Button>
+      <Button disabled={$isLCMRunning} classList={'ml-auto'}>Snapshot</Button>
     </div>
 
     <ImagePlayer>

@@ -5,6 +5,7 @@
   import InputRange from './InputRange.svelte';
   import SeedInput from './SeedInput.svelte';
   import TextArea from './TextArea.svelte';
+  import Checkbox from './Checkbox.svelte';
 
   export let pipelineParams: FieldProps[];
   export let pipelineValues = {} as any;
@@ -17,11 +18,13 @@
   {#if featuredOptions}
     {#each featuredOptions as params}
       {#if params.field === FieldType.range}
-        <InputRange {params} bind:value={pipelineValues[params.title]}></InputRange>
+        <InputRange {params} bind:value={pipelineValues[params.id]}></InputRange>
       {:else if params.field === FieldType.seed}
-        <SeedInput bind:value={pipelineValues[params.title]}></SeedInput>
+        <SeedInput bind:value={pipelineValues[params.id]}></SeedInput>
       {:else if params.field === FieldType.textarea}
-        <TextArea {params} bind:value={pipelineValues[params.title]}></TextArea>
+        <TextArea {params} bind:value={pipelineValues[params.id]}></TextArea>
+      {:else if params.field === FieldType.checkbox}
+        <Checkbox {params} bind:value={pipelineValues[params.id]}></Checkbox>
       {/if}
     {/each}
   {/if}
@@ -29,15 +32,17 @@
 
 <details open>
   <summary class="cursor-pointer font-medium">Advanced Options</summary>
-  <div class="flex flex-col gap-3 py-3">
+  <div class="grid grid-cols-1 items-center gap-3 sm:grid-cols-2">
     {#if advanceOptions}
       {#each advanceOptions as params}
         {#if params.field === FieldType.range}
-          <InputRange {params} bind:value={pipelineValues[params.title]}></InputRange>
+          <InputRange {params} bind:value={pipelineValues[params.id]}></InputRange>
         {:else if params.field === FieldType.seed}
-          <SeedInput bind:value={pipelineValues[params.title]}></SeedInput>
+          <SeedInput bind:value={pipelineValues[params.id]}></SeedInput>
         {:else if params.field === FieldType.textarea}
-          <TextArea {params} bind:value={pipelineValues[params.title]}></TextArea>
+          <TextArea {params} bind:value={pipelineValues[params.id]}></TextArea>
+        {:else if params.field === FieldType.checkbox}
+          <Checkbox {params} bind:value={pipelineValues[params.id]}></Checkbox>
         {/if}
       {/each}
     {/if}
