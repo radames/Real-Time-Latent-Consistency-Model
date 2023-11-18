@@ -15,7 +15,7 @@
     onFrameChangeStore,
     MediaStreamStatusEnum
   } from '$lib/mediaStream';
-  import { getPipelineValues, pipelineValues } from '$lib/store';
+  import { getPipelineValues, deboucedPipelineValues } from '$lib/store';
 
   let pipelineParams: FieldProps[];
   let pipelineInfo: PipelineInfo;
@@ -49,7 +49,7 @@
   // send only prompt if text mode
   $: {
     if ($lcmLiveStatus === LCMLiveStatus.CONNECTED) {
-      lcmLiveActions.send($pipelineValues);
+      lcmLiveActions.send($deboucedPipelineValues);
     }
   }
 
