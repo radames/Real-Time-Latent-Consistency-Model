@@ -9,7 +9,7 @@
 </script>
 
 <div class="grid max-w-md grid-cols-4 items-center justify-items-start gap-3">
-  <label for="model-list" class="font-medium">{params?.title} </label>
+  <label for="model-list" class="text-sm font-medium">{params?.title} </label>
   {#if params?.values}
     <select
       bind:value

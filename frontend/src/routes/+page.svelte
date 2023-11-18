@@ -16,7 +16,7 @@
   let pipelineInfo: PipelineInfo;
   let isImageMode: boolean = false;
   let maxQueueSize: number = 0;
-
+  let currentQueueSize: number = 0;
   onMount(() => {
     getSettings();
   });
@@ -28,6 +28,16 @@
     isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
     maxQueueSize = settings.max_queue_size;
     pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
+    if (maxQueueSize > 0) {
+      getQueueSize();
+      setInterval(() => {
+        getQueueSize();
+      }, 2000);
+    }
+  }
+  async function getQueueSize() {
+    const data = await fetch(`${PUBLIC_BASE_URL}/queue_size`).then((r) => r.json());
+    currentQueueSize = data.queue_size;
   }
 
   function getSreamdata() {
@@ -59,14 +69,14 @@
   }
 </script>
 
-<div class="fixed right-2 top-2 max-w-xs rounded-lg p-4 text-center text-sm font-bold" id="error" />
+<div class="fixed right-2 top-2 max-w-xs rounded-lg p-4 text-sm font-bold" id="error" />
 <main class="container mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4">
-  <article class="flex- mx-auto max-w-xl text-center">
+  <article class="text-center">
     <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
     {#if pipelineInfo?.title?.default}
       <h3 class="text-xl font-bold">{pipelineInfo?.title?.default}</h3>
     {/if}
-    <p class="py-2 text-sm">
+    <p class="text-sm">
       This demo showcases
       <a
         href="https://huggingface.co/blog/lcm_lora"
@@ -80,10 +90,17 @@
         class="text-blue-500 underline hover:no-underline">Diffusers</a
       > with a MJPEG stream server.
     </p>
+    <p class="text-sm text-gray-500">
+      Change the prompt to generate different images, accepts <a
+        href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+        target="_blank"
+        class="text-blue-500 underline hover:no-underline">Compel</a
+      > syntax.
+    </p>
     {#if maxQueueSize > 0}
       <p class="text-sm">
-        There are <span id="queue_size" class="font-bold">0</span> user(s) sharing the same GPU,
-        affecting real-time performance. Maximum queue size is {maxQueueSize}.
+        There are <span id="queue_size" class="font-bold">{currentQueueSize}</span>
+        user(s) sharing the same GPU, affecting real-time performance. Maximum queue size is {maxQueueSize}.
         <a
           href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
           target="_blank"
@@ -93,16 +110,6 @@
     {/if}
   </article>
   {#if pipelineParams}
-    <header>
-      <h2 class="font-medium">Prompt</h2>
-      <p class="text-sm text-gray-500">
-        Change the prompt to generate different images, accepts <a
-          href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
-          target="_blank"
-          class="text-blue-500 underline hover:no-underline">Compel</a
-        > syntax.
-      </p>
-    </header>
     <PipelineOptions {pipelineParams}></PipelineOptions>
     <div class="flex gap-3">
       <Button on:click={toggleLcmLive} {disabled}>
