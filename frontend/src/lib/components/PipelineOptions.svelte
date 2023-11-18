@@ -15,7 +15,7 @@
   $: featuredOptions = pipelineParams?.filter((e) => e?.hide !== true);
 </script>
 
-<div>
+<div class="grid grid-cols-1 items-center gap-3">
   {#if featuredOptions}
     {#each featuredOptions as params}
       {#if params.field === FieldType.RANGE}

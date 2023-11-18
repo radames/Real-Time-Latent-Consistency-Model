@@ -19,11 +19,12 @@ from PIL import Image
 
 taesd_model = "madebyollin/taesd"
 controlnet_model = "lllyasviel/control_v11p_sd15_canny"
-base_models = [
-    "plasmo/woolitize",
-    "nitrosocke/Ghibli-Diffusion",
-    "nitrosocke/mo-di-diffusion",
-]
+# base model with activation token, it will prepend the prompt with the activation token
+base_models = {
+    "plasmo/woolitize": "woolitize",
+    "nitrosocke/Ghibli-Diffusion": "ghibli style",
+    "nitrosocke/mo-di-diffusion": "modern disney style",
+}
 lcm_lora_id = "latent-consistency/lcm-lora-sdv1-5"
 
 
@@ -46,8 +47,8 @@ class Pipeline:
         )
         model_id: str = Field(
             "plasmo/woolitize",
-            title="Base Models List",
-            values=base_models,
+            title="Base Model",
+            values=list(base_models.keys()),
             field="select",
             id="model_id",
         )
@@ -149,14 +150,14 @@ class Pipeline:
         self.pipes = {}
 
         if args.safety_checker:
-            for model_id in base_models:
+            for model_id in base_models.keys():
                 pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                     model_id,
                     controlnet=controlnet_canny,
                 )
             self.pipes[model_id] = pipe
         else:
-            for model_id in base_models:
+            for model_id in base_models.keys():
                 pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                     model_id,
                     safety_checker=None,
@@ -199,7 +200,9 @@ class Pipeline:
         print(f"Using model: {params.model_id}")
         pipe = self.pipes[params.model_id]
 
-        prompt_embeds = pipe.compel_proc(params.prompt)
+        activation_token = base_models[params.model_id]
+        prompt = f"{activation_token} {params.prompt}"
+        prompt_embeds = pipe.compel_proc(prompt)
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
