@@ -35,25 +35,18 @@
     pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
   }
 
-  // send Webcam stream to LCM if image mode
-  $: {
-    if (
-      isImageMode &&
-      $lcmLiveStatus === LCMLiveStatus.CONNECTED &&
-      $mediaStreamStatus === MediaStreamStatusEnum.CONNECTED
-    ) {
-      lcmLiveActions.send(getPipelineValues());
-      lcmLiveActions.send($onFrameChangeStore.blob);
-    }
-  }
-  $: {
-    if (!isImageMode && $lcmLiveStatus === LCMLiveStatus.CONNECTED) {
-      lcmLiveActions.send($deboucedPipelineValues);
+  function getSreamdata() {
+    if (isImageMode) {
+      return [getPipelineValues(), $onFrameChangeStore?.blob];
+    } else {
+      return [$deboucedPipelineValues];
     }
   }
 
   $: isLCMRunning = $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED;
-
+  $: {
+    console.log('lcmLiveStatus', $lcmLiveStatus);
+  }
   let disabled = false;
   async function toggleLcmLive() {
     if (!isLCMRunning) {
@@ -62,7 +55,7 @@
         await mediaStreamActions.start();
       }
       disabled = true;
-      await lcmLiveActions.start();
+      await lcmLiveActions.start(getSreamdata);
       disabled = false;
     } else {
       if (isImageMode) {

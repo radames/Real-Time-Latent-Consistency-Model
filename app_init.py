@@ -36,9 +36,15 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
         try:
             user_id = uuid.uuid4()
             print(f"New user connected: {user_id}")
+
             await user_data.create_user(user_id, websocket)
             await websocket.send_json(
                 {"status": "connected", "message": "Connected", "userId": str(user_id)}
+            )
+            await websocket.send_json(
+                {
+                    "status": "send_frame",
+                }
             )
             await handle_websocket_data(user_id, websocket)
         except WebSocketDisconnect as e:
@@ -48,46 +54,17 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
             print(f"User disconnected: {user_id}")
             user_data.delete_user(user_id)
 
-    @app.get("/queue_size")
-    async def get_queue_size():
-        queue_size = user_data.get_user_count()
-        return JSONResponse({"queue_size": queue_size})
-
-    @app.get("/stream/{user_id}")
-    async def stream(user_id: uuid.UUID, request: Request):
-        try:
-            print(f"New stream request: {user_id}")
-
-            async def generate():
-                while True:
-                    params = await user_data.get_latest_data(user_id)
-                    if not params:
-                        continue
-                    image = pipeline.predict(params)
-                    if image is None:
-                        continue
-                    frame = pil_to_frame(image)
-                    yield frame
-                    # https://bugs.chromium.org/p/chromium/issues/detail?id=1250396
-                    if not is_firefox(request.headers["user-agent"]):
-                        yield frame
-
-            return StreamingResponse(
-                generate(),
-                media_type="multipart/x-mixed-replace;boundary=frame",
-                headers={"Cache-Control": "no-cache"},
-            )
-        except Exception as e:
-            logging.error(f"Streaming Error: {e}, {user_id} ")
-            traceback.print_exc()
-            return HTTPException(status_code=404, detail="User not found")
-
     async def handle_websocket_data(user_id: uuid.UUID, websocket: WebSocket):
         if not user_data.check_user(user_id):
             return HTTPException(status_code=404, detail="User not found")
         last_time = time.time()
         try:
             while True:
+                data = await websocket.receive_json()
+                if data["status"] != "next_frame":
+                    asyncio.sleep(1.0 / 24)
+                    continue
+
                 params = await websocket.receive_json()
                 params = pipeline.InputParams(**params)
                 info = pipeline.Info()
@@ -95,8 +72,12 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                 if info.input_mode == "image":
                     image_data = await websocket.receive_bytes()
                     params.image = bytes_to_pil(image_data)
-
                 await user_data.update_data(user_id, params)
+                await websocket.send_json(
+                    {
+                        "status": "wait",
+                    }
+                )
                 if args.timeout > 0 and time.time() - last_time > args.timeout:
                     await websocket.send_json(
                         {
@@ -112,6 +93,55 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
         except Exception as e:
             logging.error(f"Error: {e}")
             traceback.print_exc()
+
+    @app.get("/queue_size")
+    async def get_queue_size():
+        queue_size = user_data.get_user_count()
+        return JSONResponse({"queue_size": queue_size})
+
+    @app.get("/stream/{user_id}")
+    async def stream(user_id: uuid.UUID, request: Request):
+        try:
+            print(f"New stream request: {user_id}")
+
+            async def generate():
+                websocket = user_data.get_websocket(user_id)
+                last_params = SimpleNamespace()
+                while True:
+                    params = await user_data.get_latest_data(user_id)
+                    if not vars(params) or params.__dict__ == last_params.__dict__:
+                        await websocket.send_json(
+                            {
+                                "status": "send_frame",
+                            }
+                        )
+                        await asyncio.sleep(0.1)
+                        continue
+
+                    last_params = params
+                    image = pipeline.predict(params)
+                    if image is None:
+                        continue
+                    frame = pil_to_frame(image)
+                    yield frame
+                    # https://bugs.chromium.org/p/chromium/issues/detail?id=1250396
+                    if not is_firefox(request.headers["user-agent"]):
+                        yield frame
+                    await websocket.send_json(
+                        {
+                            "status": "send_frame",
+                        }
+                    )
+
+            return StreamingResponse(
+                generate(),
+                media_type="multipart/x-mixed-replace;boundary=frame",
+                headers={"Cache-Control": "no-cache"},
+            )
+        except Exception as e:
+            logging.error(f"Streaming Error: {e}, {user_id} ")
+            traceback.print_exc()
+            return HTTPException(status_code=404, detail="User not found")
 
     # route to setup frontend
     @app.get("/settings")

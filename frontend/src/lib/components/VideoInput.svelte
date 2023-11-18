@@ -12,7 +12,6 @@
   let videoFrameCallbackId: number;
   const WIDTH = 512;
   const HEIGHT = 512;
-  const THROTTLE_FPS = 6;
 
   onDestroy(() => {
     if (videoFrameCallbackId) videoEl.cancelVideoFrameCallback(videoFrameCallbackId);
@@ -22,13 +21,9 @@
     videoEl.srcObject = $mediaStream;
   }
 
-  let last_millis = 0;
   async function onFrameChange(now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
-    if (now - last_millis > 1000 / THROTTLE_FPS) {
-      const blob = await grapBlobImg();
-      onFrameChangeStore.set({ now, metadata, blob });
-      last_millis = now;
-    }
+    const blob = await grapBlobImg();
+    onFrameChangeStore.set({ blob });
     videoFrameCallbackId = videoEl.requestVideoFrameCallback(onFrameChange);
   }
 

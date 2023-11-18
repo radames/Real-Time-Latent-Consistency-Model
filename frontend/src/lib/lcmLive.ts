@@ -6,6 +6,7 @@ export enum LCMLiveStatus {
     CONNECTED = "connected",
     DISCONNECTED = "disconnected",
     WAIT = "wait",
+    SEND_FRAME = "send_frame",
 }
 
 const initStatus: LCMLiveStatus = LCMLiveStatus.DISCONNECTED;
@@ -15,7 +16,7 @@ export const streamId = writable<string | null>(null);
 
 let websocket: WebSocket | null = null;
 export const lcmLiveActions = {
-    async start() {
+    async start(getSreamdata: () => any[]) {
         return new Promise((resolve, reject) => {
 
             try {
@@ -43,6 +44,17 @@ export const lcmLiveActions = {
                             streamId.set(userId);
                             resolve(userId);
                             break;
+                        case "send_frame":
+                            lcmLiveStatus.set(LCMLiveStatus.SEND_FRAME);
+                            const streamData = getSreamdata();
+                            websocket?.send(JSON.stringify({ status: "next_frame" }));
+                            for (const d of streamData) {
+                                this.send(d);
+                            }
+                            break;
+                        case "wait":
+                            lcmLiveStatus.set(LCMLiveStatus.WAIT);
+                            break;
                         case "timeout":
                             console.log("timeout");
                             lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
@@ -60,7 +72,6 @@ export const lcmLiveActions = {
                 console.error(err);
                 lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
                 streamId.set(null);
-
                 reject(err);
             }
         });

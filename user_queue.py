@@ -36,6 +36,7 @@ class UserData:
     async def get_latest_data(self, user_id: UUID) -> SimpleNamespace:
         user_session = self.data_content[user_id]
         queue = user_session["queue"]
+
         try:
             return await queue.get()
         except asyncio.QueueEmpty:
@@ -54,6 +55,9 @@ class UserData:
 
     def get_user_count(self) -> int:
         return len(self.data_content)
+
+    def get_websocket(self, user_id: UUID) -> WebSocket:
+        return self.data_content[user_id]["websocket"]
 
 
 user_data = UserData()
