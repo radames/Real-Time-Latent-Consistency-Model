@@ -1,7 +1,13 @@
 <script lang="ts">
+  import type { FieldProps } from '$lib/types';
+  import { onMount } from 'svelte';
   import Button from './Button.svelte';
   export let value = 299792458;
+  export let params: FieldProps;
 
+  onMount(() => {
+    value = Number(params?.default ?? '');
+  });
   function randomize() {
     value = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
   }

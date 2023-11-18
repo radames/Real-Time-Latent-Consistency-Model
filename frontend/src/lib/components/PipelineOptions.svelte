@@ -20,7 +20,7 @@
       {#if params.field === FieldType.RANGE}
         <InputRange {params} bind:value={$pipelineValues[params.id]}></InputRange>
       {:else if params.field === FieldType.SEED}
-        <SeedInput bind:value={$pipelineValues[params.id]}></SeedInput>
+        <SeedInput {params} bind:value={$pipelineValues[params.id]}></SeedInput>
       {:else if params.field === FieldType.TEXTAREA}
         <TextArea {params} bind:value={$pipelineValues[params.id]}></TextArea>
       {:else if params.field === FieldType.CHECKBOX}
@@ -30,7 +30,7 @@
   {/if}
 </div>
 
-<details open>
+<details>
   <summary class="cursor-pointer font-medium">Advanced Options</summary>
   <div
     class="grid grid-cols-1 items-center gap-3 {pipelineParams.length > 5 ? 'sm:grid-cols-2' : ''}"
@@ -40,7 +40,7 @@
         {#if params.field === FieldType.RANGE}
           <InputRange {params} bind:value={$pipelineValues[params.id]}></InputRange>
         {:else if params.field === FieldType.SEED}
-          <SeedInput bind:value={$pipelineValues[params.id]}></SeedInput>
+          <SeedInput {params} bind:value={$pipelineValues[params.id]}></SeedInput>
         {:else if params.field === FieldType.TEXTAREA}
           <TextArea {params} bind:value={$pipelineValues[params.id]}></TextArea>
         {:else if params.field === FieldType.CHECKBOX}

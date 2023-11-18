@@ -22,6 +22,9 @@ export interface FieldProps {
     id: string;
 }
 export interface PipelineInfo {
+    title: {
+        default: string;
+    }
     name: string;
     description: string;
     input_mode: {

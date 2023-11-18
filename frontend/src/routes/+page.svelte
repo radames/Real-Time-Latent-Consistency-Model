@@ -78,6 +78,9 @@
 <main class="container mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4">
   <article class="flex- mx-auto max-w-xl text-center">
     <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
+    {#if pipelineInfo?.title?.default}
+      <h3 class="text-xl font-bold">{pipelineInfo?.title?.default}</h3>
+    {/if}
     <p class="py-2 text-sm">
       This demo showcases
       <a
