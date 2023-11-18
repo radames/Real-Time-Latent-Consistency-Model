@@ -46,9 +46,8 @@
       lcmLiveActions.send($onFrameChangeStore.blob);
     }
   }
-  // send only prompt if text mode
   $: {
-    if ($lcmLiveStatus === LCMLiveStatus.CONNECTED) {
+    if (!isImageMode && $lcmLiveStatus === LCMLiveStatus.CONNECTED) {
       lcmLiveActions.send($deboucedPipelineValues);
     }
   }

@@ -26,7 +26,8 @@ default_prompt = "Portrait of The Terminator with , glare pose, detailed, intric
 
 class Pipeline:
     class Info(BaseModel):
-        name: str = "txt2img"
+        name: str = "controlnet"
+        title: str = "LCM + Controlnet"
         description: str = "Generates an image from a text prompt"
         input_mode: str = "image"
 

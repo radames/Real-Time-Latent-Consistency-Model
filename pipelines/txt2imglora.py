@@ -21,8 +21,8 @@ default_prompt = "Analog style photograph of young Harrison Ford as Han Solo, st
 
 class Pipeline:
     class Info(BaseModel):
-        name: str = "txt2imglora"
-        title: str = "txt2imglora"
+        name: str = "controlnet"
+        title: str = "Text-to-Image LCM + LoRa"
         description: str = "Generates an image from a text prompt"
         input_mode: str = "text"
 
