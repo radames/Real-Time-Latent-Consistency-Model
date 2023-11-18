@@ -9,12 +9,7 @@
   import PipelineOptions from '$lib/components/PipelineOptions.svelte';
   import Spinner from '$lib/icons/spinner.svelte';
   import { lcmLiveStatus, lcmLiveActions, LCMLiveStatus } from '$lib/lcmLive';
-  import {
-    mediaStreamActions,
-    mediaStreamStatus,
-    onFrameChangeStore,
-    MediaStreamStatusEnum
-  } from '$lib/mediaStream';
+  import { mediaStreamActions, onFrameChangeStore } from '$lib/mediaStream';
   import { getPipelineValues, deboucedPipelineValues } from '$lib/store';
 
   let pipelineParams: FieldProps[];
@@ -44,9 +39,7 @@
   }
 
   $: isLCMRunning = $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED;
-  $: {
-    console.log('lcmLiveStatus', $lcmLiveStatus);
-  }
+
   let disabled = false;
   async function toggleLcmLive() {
     if (!isLCMRunning) {

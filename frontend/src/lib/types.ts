@@ -3,6 +3,7 @@ export const enum FieldType {
     SEED = "seed",
     TEXTAREA = "textarea",
     CHECKBOX = "checkbox",
+    SELECT = "select",
 }
 export const enum PipelineMode {
     IMAGE = "image",
@@ -20,6 +21,7 @@ export interface FieldProps {
     disabled?: boolean;
     hide?: boolean;
     id: string;
+    values?: string[];
 }
 export interface PipelineInfo {
     title: {

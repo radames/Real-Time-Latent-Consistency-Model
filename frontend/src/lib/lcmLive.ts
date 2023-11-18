@@ -36,7 +36,6 @@ export const lcmLiveActions = {
                 };
                 websocket.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    console.log("WS: ", data);
                     switch (data.status) {
                         case "connected":
                             const userId = data.userId;

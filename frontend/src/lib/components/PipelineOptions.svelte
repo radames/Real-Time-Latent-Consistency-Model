@@ -6,6 +6,7 @@
   import SeedInput from './SeedInput.svelte';
   import TextArea from './TextArea.svelte';
   import Checkbox from './Checkbox.svelte';
+  import Selectlist from './Selectlist.svelte';
   import { pipelineValues } from '$lib/store';
 
   export let pipelineParams: FieldProps[];
@@ -25,6 +26,8 @@
         <TextArea {params} bind:value={$pipelineValues[params.id]}></TextArea>
       {:else if params.field === FieldType.CHECKBOX}
         <Checkbox {params} bind:value={$pipelineValues[params.id]}></Checkbox>
+      {:else if params.field === FieldType.SELECT}
+        <Selectlist {params} bind:value={$pipelineValues[params.id]}></Selectlist>
       {/if}
     {/each}
   {/if}
@@ -45,6 +48,8 @@
           <TextArea {params} bind:value={$pipelineValues[params.id]}></TextArea>
         {:else if params.field === FieldType.CHECKBOX}
           <Checkbox {params} bind:value={$pipelineValues[params.id]}></Checkbox>
+        {:else if params.field === FieldType.SELECT}
+          <Selectlist {params} bind:value={$pipelineValues[params.id]}></Selectlist>
         {/if}
       {/each}
     {/if}
