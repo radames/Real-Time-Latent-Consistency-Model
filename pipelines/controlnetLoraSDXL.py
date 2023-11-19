@@ -49,13 +49,6 @@ class Pipeline:
             field="textarea",
             id="prompt",
         )
-        model_id: str = Field(
-            "plasmo/woolitize",
-            title="Base Model",
-            values=list(base_models.keys()),
-            field="select",
-            id="model_id",
-        )
         negative_prompt: str = Field(
             default_negative_prompt,
             title="Negative Prompt",
@@ -70,10 +63,10 @@ class Pipeline:
             4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             1.0,
@@ -212,11 +205,7 @@ class Pipeline:
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
-        print(f"Using model: {params.model_id}")
-        # pipe = self.pipes[params.model_id]
 
-        # activation_token = base_models[params.model_id]
-        # prompt = f"{activation_token} {params.prompt}"
         prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
             [params.prompt, params.negative_prompt]
         )

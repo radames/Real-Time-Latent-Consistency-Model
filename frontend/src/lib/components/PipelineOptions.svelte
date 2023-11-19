@@ -15,31 +15,10 @@
   $: featuredOptions = pipelineParams?.filter((e) => e?.hide !== true);
 </script>
 
-<div class="grid grid-cols-1 items-center gap-3">
-  {#if featuredOptions}
-    {#each featuredOptions as params}
-      {#if params.field === FieldType.RANGE}
-        <InputRange {params} bind:value={$pipelineValues[params.id]}></InputRange>
-      {:else if params.field === FieldType.SEED}
-        <SeedInput {params} bind:value={$pipelineValues[params.id]}></SeedInput>
-      {:else if params.field === FieldType.TEXTAREA}
-        <TextArea {params} bind:value={$pipelineValues[params.id]}></TextArea>
-      {:else if params.field === FieldType.CHECKBOX}
-        <Checkbox {params} bind:value={$pipelineValues[params.id]}></Checkbox>
-      {:else if params.field === FieldType.SELECT}
-        <Selectlist {params} bind:value={$pipelineValues[params.id]}></Selectlist>
-      {/if}
-    {/each}
-  {/if}
-</div>
-
-<details>
-  <summary class="cursor-pointer font-medium">Advanced Options</summary>
-  <div
-    class="grid grid-cols-1 items-center gap-3 {pipelineParams.length > 5 ? 'sm:grid-cols-2' : ''}"
-  >
-    {#if advanceOptions}
-      {#each advanceOptions as params}
+<div class="flex flex-col gap-3">
+  <div class="grid grid-cols-1 items-center gap-3">
+    {#if featuredOptions}
+      {#each featuredOptions as params}
         {#if params.field === FieldType.RANGE}
           <InputRange {params} bind:value={$pipelineValues[params.id]}></InputRange>
         {:else if params.field === FieldType.SEED}
@@ -54,4 +33,29 @@
       {/each}
     {/if}
   </div>
-</details>
+
+  <details>
+    <summary class="cursor-pointer font-medium">Advanced Options</summary>
+    <div
+      class="grid grid-cols-1 items-center gap-3 {pipelineParams.length > 5
+        ? 'sm:grid-cols-2'
+        : ''}"
+    >
+      {#if advanceOptions}
+        {#each advanceOptions as params}
+          {#if params.field === FieldType.RANGE}
+            <InputRange {params} bind:value={$pipelineValues[params.id]}></InputRange>
+          {:else if params.field === FieldType.SEED}
+            <SeedInput {params} bind:value={$pipelineValues[params.id]}></SeedInput>
+          {:else if params.field === FieldType.TEXTAREA}
+            <TextArea {params} bind:value={$pipelineValues[params.id]}></TextArea>
+          {:else if params.field === FieldType.CHECKBOX}
+            <Checkbox {params} bind:value={$pipelineValues[params.id]}></Checkbox>
+          {:else if params.field === FieldType.SELECT}
+            <Selectlist {params} bind:value={$pipelineValues[params.id]}></Selectlist>
+          {/if}
+        {/each}
+      {/if}
+    </div>
+  </details>
+</div>

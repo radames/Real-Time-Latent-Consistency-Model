@@ -32,5 +32,7 @@
       <slot />
     </div>
   </div>
-  <Button on:click={takeSnapshot} disabled={!isLCMRunning} classList={'ml-auto'}>Snapshot</Button>
+  <Button on:click={takeSnapshot} disabled={!isLCMRunning} classList={'text-sm my-1 ml-auto'}
+    >Snap</Button
+  >
 </div>

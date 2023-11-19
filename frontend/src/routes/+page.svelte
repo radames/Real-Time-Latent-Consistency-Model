@@ -111,15 +111,13 @@
     <article class="my-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
       <div>
         <PipelineOptions {pipelineParams}></PipelineOptions>
-        <div class="flex gap-3">
-          <Button on:click={toggleLcmLive} {disabled}>
-            {#if isLCMRunning}
-              Stop
-            {:else}
-              Start
-            {/if}
-          </Button>
-        </div>
+        <Button on:click={toggleLcmLive} {disabled} classList={'text-lg my-1'}>
+          {#if isLCMRunning}
+            Stop
+          {:else}
+            Start
+          {/if}
+        </Button>
       </div>
       <div>
         <ImagePlayer>

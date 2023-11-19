@@ -8,7 +8,7 @@
   });
 </script>
 
-<div class="px-1 py-1">
+<div class="">
   <label class="text-sm font-medium" for={params?.title}>
     {params?.title}
   </label>
