@@ -68,7 +68,7 @@
   }
 </script>
 
-<main class="container mx-auto flex flex-col gap-3 px-4 py-4">
+<main class="container mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4">
   <article class="text-center">
     <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
     {#if pipelineInfo?.title?.default}
@@ -108,23 +108,24 @@
     {/if}
   </article>
   {#if pipelineParams}
-    <article class="my-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-      <div>
-        <PipelineOptions {pipelineParams}></PipelineOptions>
-        <Button on:click={toggleLcmLive} {disabled} classList={'text-lg my-1'}>
+    <article class="my-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {#if isImageMode}
+        <div class="col-start-1">
+          <VideoInput></VideoInput>
+        </div>
+      {/if}
+      <div class={isImageMode ? 'col-start-2' : 'col-span-2'}>
+        <ImagePlayer />
+      </div>
+      <div class="col-span-2">
+        <Button on:click={toggleLcmLive} {disabled} classList={'text-lg my-1 p-2'}>
           {#if isLCMRunning}
             Stop
           {:else}
             Start
           {/if}
         </Button>
-      </div>
-      <div>
-        <ImagePlayer>
-          {#if isImageMode}
-            <VideoInput></VideoInput>
-          {/if}
-        </ImagePlayer>
+        <PipelineOptions {pipelineParams}></PipelineOptions>
       </div>
     </article>
   {:else}

@@ -1,12 +1,19 @@
 import * as piexif from "piexifjs";
 
-export function snapImage(imageEl: HTMLImageElement) {
+interface IImageInfo {
+    prompt?: string;
+    negative_prompt?: string;
+    seed?: number;
+    guidance_scale?: number;
+}
+
+export function snapImage(imageEl: HTMLImageElement, info: IImageInfo) {
     try {
         const zeroth: { [key: string]: any } = {};
         const exif: { [key: string]: any } = {};
         const gps: { [key: string]: any } = {};
         zeroth[piexif.ImageIFD.Make] = "LCM Image-to-Image ControNet";
-        // zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${getValue("#prompt")} | seed: ${getValue("#seed")} | guidance_scale: ${getValue("#guidance-scale")} | strength: ${getValue("#strength")} | controlnet_start: ${getValue("#controlnet_start")} | controlnet_end: ${getValue("#controlnet_end")} | steps: ${getValue("#steps")}`;
+        zeroth[piexif.ImageIFD.ImageDescription] = `prompt: ${info?.prompt} | negative_prompt: ${info?.negative_prompt} | seed: ${info?.seed} | guidance_scale: ${info?.guidance_scale}`;
         zeroth[piexif.ImageIFD.Software] = "https://github.com/radames/Real-Time-Latent-Consistency-Model";
         exif[piexif.ExifIFD.DateTimeOriginal] = new Date().toISOString();
 

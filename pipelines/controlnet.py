@@ -53,7 +53,7 @@ class Pipeline:
         guidance_scale: float = Field(
             0.2,
             min=0,
-            max=2,
+            max=5,
             step=0.001,
             title="Guidance Scale",
             field="range",
