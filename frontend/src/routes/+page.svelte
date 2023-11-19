@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { PUBLIC_BASE_URL } from '$env/static/public';
   import type { FieldProps, PipelineInfo } from '$lib/types';
   import { PipelineMode } from '$lib/types';
   import ImagePlayer from '$lib/components/ImagePlayer.svelte';
@@ -22,7 +21,7 @@
   });
 
   async function getSettings() {
-    const settings = await fetch(`${PUBLIC_BASE_URL}/settings`).then((r) => r.json());
+    const settings = await fetch('/settings').then((r) => r.json());
     pipelineParams = Object.values(settings.input_params.properties);
     pipelineInfo = settings.info.properties;
     isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
@@ -36,7 +35,7 @@
     }
   }
   async function getQueueSize() {
-    const data = await fetch(`${PUBLIC_BASE_URL}/queue_size`).then((r) => r.json());
+    const data = await fetch('/queue_size').then((r) => r.json());
     currentQueueSize = data.queue_size;
   }
 
@@ -69,8 +68,7 @@
   }
 </script>
 
-<div class="fixed right-2 top-2 max-w-xs rounded-lg p-4 text-sm font-bold" id="error" />
-<main class="container mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4">
+<main class="container mx-auto flex flex-col gap-3 px-4 py-4">
   <article class="text-center">
     <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
     {#if pipelineInfo?.title?.default}
@@ -110,23 +108,27 @@
     {/if}
   </article>
   {#if pipelineParams}
-    <PipelineOptions {pipelineParams}></PipelineOptions>
-    <div class="flex gap-3">
-      <Button on:click={toggleLcmLive} {disabled}>
-        {#if isLCMRunning}
-          Stop
-        {:else}
-          Start
-        {/if}
-      </Button>
-      <Button disabled={isLCMRunning} classList={'ml-auto'}>Snapshot</Button>
-    </div>
-
-    <ImagePlayer>
-      {#if isImageMode}
-        <VideoInput></VideoInput>
-      {/if}
-    </ImagePlayer>
+    <article class="my-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div>
+        <PipelineOptions {pipelineParams}></PipelineOptions>
+        <div class="flex gap-3">
+          <Button on:click={toggleLcmLive} {disabled}>
+            {#if isLCMRunning}
+              Stop
+            {:else}
+              Start
+            {/if}
+          </Button>
+        </div>
+      </div>
+      <div>
+        <ImagePlayer>
+          {#if isImageMode}
+            <VideoInput></VideoInput>
+          {/if}
+        </ImagePlayer>
+      </div>
+    </article>
   {:else}
     <!-- loading -->
     <div class="flex items-center justify-center gap-3 py-48 text-2xl">

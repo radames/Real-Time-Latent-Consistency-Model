@@ -1,5 +1,4 @@
 import { writable } from 'svelte/store';
-import { PUBLIC_WSS_URL } from '$env/static/public';
 
 
 export enum LCMLiveStatus {
@@ -20,7 +19,7 @@ export const lcmLiveActions = {
         return new Promise((resolve, reject) => {
 
             try {
-                const websocketURL = PUBLIC_WSS_URL ? PUBLIC_WSS_URL : `${window.location.protocol === "https:" ? "wss" : "ws"
+                const websocketURL = `${window.location.protocol === "https:" ? "wss" : "ws"
                     }:${window.location.host}/ws`;
 
                 websocket = new WebSocket(websocketURL);
