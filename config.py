@@ -14,6 +14,8 @@ class Args(NamedTuple):
     torch_compile: bool
     use_taesd: bool
     pipeline: str
+    ssl_certfile: str
+    ssl_keyfile: str
 
 
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
@@ -33,16 +35,29 @@ parser.add_argument(
     "--mode", type=str, default=default_mode, help="App Inferece Mode: txt2img, img2img"
 )
 parser.add_argument(
-    "--max_queue_size", type=int, default=MAX_QUEUE_SIZE, help="Max Queue Size"
+    "--max-queue-size",
+    "--max_queue_size",
+    type=int,
+    default=MAX_QUEUE_SIZE,
+    help="Max Queue Size",
 )
 parser.add_argument("--timeout", type=float, default=TIMEOUT, help="Timeout")
 parser.add_argument(
-    "--safety_checker", type=bool, default=SAFETY_CHECKER, help="Safety Checker"
+    "--safety-checker",
+    "--safety_checker",
+    type=bool,
+    default=SAFETY_CHECKER,
+    help="Safety Checker",
 )
 parser.add_argument(
-    "--torch_compile", type=bool, default=TORCH_COMPILE, help="Torch Compile"
+    "--torch-compile",
+    "--torch_compile",
+    type=bool,
+    default=TORCH_COMPILE,
+    help="Torch Compile",
 )
 parser.add_argument(
+    "--use-taesd",
     "--use_taesd",
     type=bool,
     default=USE_TAESD,
@@ -53,6 +68,20 @@ parser.add_argument(
     type=str,
     default="txt2img",
     help="Pipeline to use",
+)
+parser.add_argument(
+    "--ssl-certfile",
+    "--ssl_certfile",
+    type=str,
+    default=None,
+    help="SSL certfile",
+)
+parser.add_argument(
+    "--ssl-keyfile",
+    "--ssl_keyfile",
+    type=str,
+    default=None,
+    help="SSL keyfile",
 )
 
 args = Args(**vars(parser.parse_args()))
