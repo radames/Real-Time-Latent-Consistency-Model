@@ -35,6 +35,7 @@
   },
   "type": "module",
   "dependencies": {
+    "piexifjs": "^1.0.6",
     "rvfc-polyfill": "^1.0.7"
   }
 }
