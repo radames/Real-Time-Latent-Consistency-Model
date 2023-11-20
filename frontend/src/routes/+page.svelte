@@ -110,14 +110,14 @@
   {#if pipelineParams}
     <article class="my-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
       {#if isImageMode}
-        <div class="col-start-1">
+        <div class="sm:col-start-1">
           <VideoInput></VideoInput>
         </div>
       {/if}
-      <div class={isImageMode ? 'col-start-2' : 'col-span-2'}>
+      <div class={isImageMode ? 'sm:col-start-2' : 'col-span-2'}>
         <ImagePlayer />
       </div>
-      <div class="col-span-2">
+      <div class="sm:col-span-2">
         <Button on:click={toggleLcmLive} {disabled} classList={'text-lg my-1 p-2'}>
           {#if isLCMRunning}
             Stop

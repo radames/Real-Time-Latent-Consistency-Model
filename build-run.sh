@@ -8,4 +8,9 @@ else
     echo -e "\033[1;31m\nfrontend build failed\n\033[0m" >&2  exit 1
 fi
 cd ../
-python run.py --reload  --pipeline controlnet
+#check if var PIPELINE is set otherwise get default
+if [ -z ${PIPELINE+x} ]; then
+    PIPELINE="controlnet"
+fi
+echo -e "\033[1;32m\npipeline: $PIPELINE \033[0m"
+python3 run.py --port 7860 --host 0.0.0.0 --pipeline $PIPELINE

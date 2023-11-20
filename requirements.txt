@@ -1,6 +1,5 @@
 git+https://github.com/huggingface/diffusers@6f1435332bc74e286af5e88014236e4cc712b747
-transformers==4.34.1
-gradio==3.50.2
+transformers==4.35.2
 --extra-index-url https://download.pytorch.org/whl/cu121;
 torch==2.1.0
 fastapi==0.104.1

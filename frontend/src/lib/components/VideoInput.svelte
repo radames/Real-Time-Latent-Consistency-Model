@@ -53,7 +53,7 @@
   }
 </script>
 
-<div class="relative overflow-hidden rounded-lg border border-slate-300">
+<div class="relative mx-auto max-w-lg overflow-hidden rounded-lg border border-slate-300">
   <div class="relative z-10 aspect-square w-full object-cover">
     <video
       class="aspect-square w-full object-cover"
