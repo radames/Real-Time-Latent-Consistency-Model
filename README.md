@@ -10,7 +10,7 @@ suggested_hardware: a10g-small
 
 # Real-Time Latent Consistency Model
 
-This demo showcases [Latent Consistency Model (LCM)](https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7) using [Diffusers](https://github.com/huggingface/diffusers/tree/main/examples/community#latent-consistency-pipeline) with a MJPEG stream server.
+This demo showcases [Latent Consistency Model (LCM)](https://latent-consistency-models.github.io/) using [Diffusers](https://huggingface.co/docs/diffusers/using-diffusers/lcm) with a MJPEG stream server. You can read more about LCM + LoRAs with diffusers [here](https://huggingface.co/blog/lcm_lora).
 
 You need a webcam to run this demo. 🤗
 
@@ -18,12 +18,7 @@ See a collecting with live demos [here](https://huggingface.co/collections/laten
 
 ## Running Locally
 
-You need CUDA and Python 3.10, Mac with an M1/M2/M3 chip or Intel Arc GPU
-
-`TIMEOUT`: limit user session timeout  
-`SAFETY_CHECKER`: disabled if you want NSFW filter off  
-`MAX_QUEUE_SIZE`: limit number of users on current app instance  
-`TORCH_COMPILE`: enable if you want to use torch compile for faster inference works well on A100 GPUs
+You need CUDA and Python 3.10, Node > 19, Mac with an M1/M2/M3 chip or Intel Arc GPU
 
 
 ## Install
@@ -32,28 +27,38 @@ You need CUDA and Python 3.10, Mac with an M1/M2/M3 chip or Intel Arc GPU
 python -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
+cd frontend && npm install && npm run build && cd ..
+python run.py --reload --pipeline controlnet
+```
+
+# Pipelines
+You can build your own pipeline following examples here [here](pipelines),
+don't forget to fuild the frontend first 
+```bash
+cd frontend && npm install && npm run build && cd ..
 ```
 
 # LCM
 ### Image to Image
 
 ```bash
-uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
+python run.py --reload --pipeline img2img 
+```
+
+# LCM
+### Text to Image
+
+```bash
+python run.py --reload --pipeline txt2img 
 ```
 
 ### Image to Image ControlNet Canny
 
-Based pipeline from [taabata](https://github.com/taabata/LCM_Inpaint_Outpaint_Comfy)
 
 ```bash
-uvicorn "app-controlnet:app" --host 0.0.0.0 --port 7860 --reload
+python run.py --reload --pipeline controlnet 
 ```
 
-### Text to Image
-
-```bash
-uvicorn "app-txt2img:app" --host 0.0.0.0 --port 7860 --reload
-```
 
 # LCM + LoRa
 
@@ -63,34 +68,59 @@ Using LCM-LoRA, giving it the super power of doing inference in as little as 4 s
 
 ### Image to Image ControlNet Canny LoRa
 
+```bash
+python run.py --reload --pipeline controlnetLoraSD15
+```
+or SDXL, note that SDXL is slower than SD15 since the inference runs on 1024x1024 images
 
 ```bash
-uvicorn "app-controlnetlora:app" --host 0.0.0.0 --port 7860 --reload
+python run.py --reload --pipeline controlnetLoraSDXL
 ```
 
 ### Text to Image
 
 ```bash
-uvicorn "app-txt2imglora:app" --host 0.0.0.0 --port 7860 --reload
+python run.py --reload --pipeline txt2imgLora
+```
+
+or 
+
+```bash
+python run.py --reload --pipeline txt2imgLoraSDXL
 ```
 
 
 ### Setting environment variables
 
+
+`TIMEOUT`: limit user session timeout  
+`SAFETY_CHECKER`: disabled if you want NSFW filter off  
+`MAX_QUEUE_SIZE`: limit number of users on current app instance  
+`TORCH_COMPILE`: enable if you want to use torch compile for faster inference works well on A100 GPUs
+`USE_TAESD`: enable if you want to use Autoencoder Tiny
+
+If you run using `bash build-run.sh` you can set `PIPELINE` variables to choose the pipeline you want to run
+
 ```bash
-TIMEOUT=120 SAFETY_CHECKER=True MAX_QUEUE_SIZE=4 uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload
+PIPELINE=txt2imgLoraSDXL bash build-run.sh
 ```
 
-If you're running locally and want to test it on Mobile Safari, the webserver needs to be served over HTTPS.
+and setting environment variables
+
+```bash
+TIMEOUT=120 SAFETY_CHECKER=True MAX_QUEUE_SIZE=4 python run.py --reload --pipeline txt2imgLoraSDXL
+```
+
+If you're running locally and want to test it on Mobile Safari, the webserver needs to be served over HTTPS, or follow this instruction on my [comment](https://github.com/radames/Real-Time-Latent-Consistency-Model/issues/17#issuecomment-1811957196)
 
 ```bash
 openssl req -newkey rsa:4096 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
-uvicorn "app-img2img:app" --host 0.0.0.0 --port 7860 --reload --log-level info --ssl-certfile=certificate.pem --ssl-keyfile=key.pem
+python run.py --reload --ssl-certfile=certificate.pem --ssl-keyfile=key.pem
 ```
 
 ## Docker
 
-You need NVIDIA Container Toolkit for Docker
+You need NVIDIA Container Toolkit for Docker, defaults to `controlnet``
 
 ```bash
 docker build -t lcm-live .
@@ -100,7 +130,7 @@ docker run -ti -p 7860:7860 --gpus all lcm-live
 or with environment variables
 
 ```bash
-docker run -ti -e TIMEOUT=0 -e SAFETY_CHECKER=False -p 7860:7860 --gpus all lcm-live
+docker run -ti -e PIPELINE=txt2imgLoraSDXL -p 7860:7860 --gpus all lcm-live
 ```
 # Development Mode
 
