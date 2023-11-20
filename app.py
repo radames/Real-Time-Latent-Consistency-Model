@@ -7,6 +7,13 @@ from user_queue import user_data
 from util import get_pipeline_class
 
 
+print("DEVICE:", device)
+print("TORCH_DTYPE:", torch_dtype)
+print("PIPELINE:", args.pipeline)
+print("SAFETY_CHECKER:", args.safety_checker)
+print("TORCH_COMPILE:", args.torch_compile)
+
+
 app = FastAPI()
 
 pipeline_class = get_pipeline_class(args.pipeline)
