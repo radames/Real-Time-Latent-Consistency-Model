@@ -43,6 +43,33 @@ export const mediaStreamActions = {
                 mediaStream.set(null);
             });
     },
+    async startScreenCapture() {
+        const displayMediaOptions = {
+            video: {
+                displaySurface: "window",
+            },
+            audio: false,
+            surfaceSwitching: "include"
+        };
+
+
+        let captureStream = null;
+
+        try {
+            captureStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+            const videoTrack = captureStream.getVideoTracks()[0];
+
+            console.log("Track settings:");
+            console.log(JSON.stringify(videoTrack.getSettings(), null, 2));
+            console.log("Track constraints:");
+            console.log(JSON.stringify(videoTrack.getConstraints(), null, 2));
+            mediaStreamStatus.set(MediaStreamStatusEnum.CONNECTED);
+            mediaStream.set(captureStream)
+        } catch (err) {
+            console.error(err);
+        }
+
+    },
     async switchCamera(mediaDevicedID: string) {
         if (get(mediaStreamStatus) !== MediaStreamStatusEnum.CONNECTED) {
             return;
