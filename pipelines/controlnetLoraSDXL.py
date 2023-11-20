@@ -179,6 +179,8 @@ class Pipeline:
         self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype).to(device)
+        if device.type != "mps":
+            self.pipe.unet.to(memory_format=torch.channels_last)
 
         if psutil.virtual_memory().total < 64 * 1024**3:
             self.pipe.enable_attention_slicing()

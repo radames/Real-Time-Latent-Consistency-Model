@@ -70,7 +70,8 @@ class Pipeline:
         self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
-        self.pipe.unet.to(memory_format=torch.channels_last)
+        if device.type != "mps":
+            self.pipe.unet.to(memory_format=torch.channels_last)
 
         # check if computer has less than 64GB of RAM using sys or os
         if psutil.virtual_memory().total < 64 * 1024**3:
