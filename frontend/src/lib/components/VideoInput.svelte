@@ -5,14 +5,19 @@
     mediaStreamStatus,
     MediaStreamStatusEnum,
     onFrameChangeStore,
-    mediaStream
+    mediaStream,
+    mediaDevices
   } from '$lib/mediaStream';
+  import MediaListSwitcher from './MediaListSwitcher.svelte';
 
   let videoEl: HTMLVideoElement;
   let videoFrameCallbackId: number;
   const WIDTH = 512;
   const HEIGHT = 512;
-
+  let selectedDevice: string = '';
+  $: {
+    console.log(selectedDevice);
+  }
   onDestroy(() => {
     if (videoFrameCallbackId) videoEl.cancelVideoFrameCallback(videoFrameCallbackId);
   });
@@ -20,7 +25,6 @@
   $: if (videoEl) {
     videoEl.srcObject = $mediaStream;
   }
-
   async function onFrameChange(now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
     const blob = await grapBlobImg();
     onFrameChangeStore.set({ blob });
@@ -55,8 +59,13 @@
 
 <div class="relative mx-auto max-w-lg overflow-hidden rounded-lg border border-slate-300">
   <div class="relative z-10 aspect-square w-full object-cover">
+    {#if $mediaDevices.length > 0}
+      <div class="absolute bottom-0 right-0">
+        <MediaListSwitcher />
+      </div>
+    {/if}
     <video
-      class="aspect-square w-full object-cover"
+      class="pointer-events-none aspect-square w-full object-cover"
       bind:this={videoEl}
       playsinline
       autoplay

@@ -1,4 +1,4 @@
-import { writable, type Writable } from 'svelte/store';
+import { writable, type Writable, get } from 'svelte/store';
 
 export enum MediaStreamStatusEnum {
     INIT = "init",
@@ -44,6 +44,9 @@ export const mediaStreamActions = {
             });
     },
     async switchCamera(mediaDevicedID: string) {
+        if (get(mediaStreamStatus) !== MediaStreamStatusEnum.CONNECTED) {
+            return;
+        }
         const constraints = {
             audio: false,
             video: { width: 1024, height: 1024, deviceId: mediaDevicedID }
