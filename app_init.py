@@ -121,17 +121,14 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                     last_params = params
                     image = pipeline.predict(params)
                     if image is None:
+                        await websocket.send_json({"status": "send_frame"})
                         continue
                     frame = pil_to_frame(image)
                     yield frame
                     # https://bugs.chromium.org/p/chromium/issues/detail?id=1250396
                     if not is_firefox(request.headers["user-agent"]):
                         yield frame
-                    await websocket.send_json(
-                        {
-                            "status": "send_frame",
-                        }
-                    )
+                    await websocket.send_json({"status": "send_frame"})
 
             return StreamingResponse(
                 generate(),
