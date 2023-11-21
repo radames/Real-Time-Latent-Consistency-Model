@@ -56,6 +56,9 @@ class Pipeline:
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
+        if args.oneflow_compile:
+            from onediff.infer_compiler import oneflow_compile
+
         if args.safety_checker:
             self.pipe = DiffusionPipeline.from_pretrained(base_model)
         else:
@@ -69,21 +72,22 @@ class Pipeline:
 
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
-        if device.type != "mps":
+        if device.type != "mps" and not args.oneflow_compile:
             self.pipe.unet.to(memory_format=torch.channels_last)
 
         # check if computer has less than 64GB of RAM using sys or os
-        if psutil.virtual_memory().total < 64 * 1024**3:
+        if psutil.virtual_memory().total < 64 * 1024**3 and not args.oneflow_compile:
             self.pipe.enable_attention_slicing()
 
         if args.torch_compile:
             self.pipe.unet = torch.compile(
                 self.pipe.unet, mode="reduce-overhead", fullgraph=True
             )
-            self.pipe.vae = torch.compile(
-                self.pipe.vae, mode="reduce-overhead", fullgraph=True
-            )
+            self.pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
+        if args.oneflow_compile:
+            self.pipe.unet = oneflow_compile(self.pipe.unet)
+            self.pipe.vae = oneflow_compile(self.pipe.vae)
             self.pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
         self.compel_proc = Compel(

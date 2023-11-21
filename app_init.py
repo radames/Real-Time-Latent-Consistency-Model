@@ -88,7 +88,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                     )
                     await websocket.close()
                     return
-                await asyncio.sleep(1.0 / 24)
+                await asyncio.sleep(1.0 / 60)
 
         except Exception as e:
             logging.error(f"Error: {e}")
@@ -115,7 +115,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                                 "status": "send_frame",
                             }
                         )
-                        await asyncio.sleep(0.1)
+                        await asyncio.sleep(0.01)
                         continue
 
                     last_params = params
