@@ -104,10 +104,7 @@ class Pipeline:
             )
         if args.oneflow_compile:
             self.pipe.unet = oneflow_compile(self.pipe.unet)
-            self.pipe.vae = oneflow_compile(self.pipe.vae)
-            self.pipe(
-                prompt="warmup",
-                image=[Image.new("RGB", (768, 768))]
+            self.pipe(prompt="warmup", image=[Image.new("RGB", (768, 768))])
 
         self.compel_proc = Compel(
             tokenizer=self.pipe.tokenizer,

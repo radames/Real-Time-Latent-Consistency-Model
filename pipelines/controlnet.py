@@ -152,11 +152,11 @@ class Pipeline:
         self.canny_torch = SobelOperator(device=device)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
-        if device.type != "mps":
+        if device.type != "mps" and not args.oneflow_compile:
             self.pipe.unet.to(memory_format=torch.channels_last)
 
         # check if computer has less than 64GB of RAM using sys or os
-        if psutil.virtual_memory().total < 64 * 1024**3:
+        if psutil.virtual_memory().total < 64 * 1024**3 and not args.oneflow_compile:
             self.pipe.enable_attention_slicing()
 
         if args.torch_compile:
