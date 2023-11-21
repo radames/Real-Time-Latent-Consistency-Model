@@ -45,12 +45,12 @@ class Pipeline:
             field="textarea",
             id="prompt",
         )
-        model_id: str = Field(
+        base_model_id: str = Field(
             "plasmo/woolitize",
             title="Base Model",
             values=list(base_models.keys()),
             field="select",
-            id="model_id",
+            id="base_model_id",
         )
         seed: int = Field(
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
@@ -150,20 +150,20 @@ class Pipeline:
         self.pipes = {}
 
         if args.safety_checker:
-            for model_id in base_models.keys():
+            for base_model_id in base_models.keys():
                 pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                    model_id,
+                    base_model_id,
                     controlnet=controlnet_canny,
                 )
-            self.pipes[model_id] = pipe
+            self.pipes[base_model_id] = pipe
         else:
-            for model_id in base_models.keys():
+            for base_model_id in base_models.keys():
                 pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                    model_id,
+                    base_model_id,
                     safety_checker=None,
                     controlnet=controlnet_canny,
                 )
-                self.pipes[model_id] = pipe
+                self.pipes[base_model_id] = pipe
 
         self.canny_torch = SobelOperator(device=device)
 
@@ -199,10 +199,10 @@ class Pipeline:
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
-        print(f"Using model: {params.model_id}")
-        pipe = self.pipes[params.model_id]
+        print(f"Using model: {params.base_model_id}")
+        pipe = self.pipes[params.base_model_id]
 
-        activation_token = base_models[params.model_id]
+        activation_token = base_models[params.base_model_id]
         prompt = f"{activation_token} {params.prompt}"
         prompt_embeds = pipe.compel_proc(prompt)
         control_image = self.canny_torch(
