@@ -13,6 +13,7 @@ import time
 from types import SimpleNamespace
 from util import pil_to_frame, bytes_to_pil, is_firefox
 import asyncio
+import os
 
 
 def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
@@ -152,5 +153,8 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                 "max_queue_size": args.max_queue_size,
             }
         )
+
+    if not os.path.exists("public"):
+        os.makedirs("public")
 
     app.mount("/", StaticFiles(directory="public", html=True), name="public")
