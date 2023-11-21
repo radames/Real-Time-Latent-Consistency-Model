@@ -12,6 +12,7 @@ class Args(NamedTuple):
     timeout: float
     safety_checker: bool
     torch_compile: bool
+    oneflow_compile: bool
     use_taesd: bool
     pipeline: str
     ssl_certfile: str
@@ -55,6 +56,13 @@ parser.add_argument(
     type=bool,
     default=TORCH_COMPILE,
     help="Torch Compile",
+)
+parser.add_argument(
+    "--oneflow-compile",
+    "--oneflow_compile",
+    type=bool,
+    default=False,
+    help="User Oneflow compile https://github.com/Oneflow-Inc/oneflow",
 )
 parser.add_argument(
     "--use-taesd",

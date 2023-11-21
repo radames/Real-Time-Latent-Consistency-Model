@@ -15,10 +15,10 @@
   let canvasEl: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
   let videoFrameCallbackId: number;
-  const WIDTH = 768;
-  const HEIGHT = 768;
+  const WIDTH = 512;
+  const HEIGHT = 512;
   // ajust the throttle time to your needs
-  const THROTTLE_TIME = 1000 / 15;
+  const THROTTLE_TIME = 1000 / 30;
   let selectedDevice: string = '';
 
   onMount(() => {

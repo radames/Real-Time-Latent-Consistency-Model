@@ -119,7 +119,9 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                         continue
 
                     last_params = params
+                    last_time = time.time()
                     image = pipeline.predict(params)
+                    print(f"Predict time: {time.time() - last_time}")
                     if image is None:
                         await websocket.send_json({"status": "send_frame"})
                         continue

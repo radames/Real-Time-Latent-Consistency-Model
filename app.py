@@ -12,7 +12,8 @@ print("TORCH_DTYPE:", torch_dtype)
 print("PIPELINE:", args.pipeline)
 print("SAFETY_CHECKER:", args.safety_checker)
 print("TORCH_COMPILE:", args.torch_compile)
-
+if args.oneflow_compile:
+    print("ONEFLOW_COMPILE:", args.oneflow_compile)
 
 app = FastAPI()
 

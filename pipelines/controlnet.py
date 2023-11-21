@@ -129,6 +129,9 @@ class Pipeline:
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
+        if args.oneflow_compile:
+            from onediff.infer_compiler import oneflow_compile
+
         controlnet_canny = ControlNetModel.from_pretrained(
             controlnet_model, torch_dtype=torch_dtype
         ).to(device)
@@ -169,6 +172,8 @@ class Pipeline:
                 image=[Image.new("RGB", (768, 768))],
                 control_image=[Image.new("RGB", (768, 768))],
             )
+        if args.oneflow_compile:
+            self.pipe.unet = oneflow_compile(self.pipe.unet)
 
         self.compel_proc = Compel(
             tokenizer=self.pipe.tokenizer,

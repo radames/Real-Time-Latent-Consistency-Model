@@ -1,0 +1,17 @@
+git+https://github.com/huggingface/diffusers@7457aa67cb5c75132c38507080697b7cc7c4d9e6
+transformers==4.35.2
+--extra-index-url https://download.pytorch.org/whl/cu122
+torch==2.1.0
+fastapi==0.104.1
+uvicorn[standard]==0.24.0.post1
+Pillow==10.1.0
+accelerate==0.24.0
+compel==2.0.2
+controlnet-aux==0.0.7
+peft==0.6.0
+xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
+# oneflow
+--find-links https://oneflow-pro.oss-cn-beijing.aliyuncs.com/branch/master_open_source/cu122
+# --find-links https://oneflow-pro.oss-cn-beijing.aliyuncs.com/branch/master_open_source/cu121
+--pre oneflow
+git+https://github.com/Oneflow-Inc/diffusers.git
