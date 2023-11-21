@@ -23,6 +23,7 @@ MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None) == "True"
 TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None) == "True"
+ONEFLOW_COMPILE = os.environ.get("ONEFLOW_COMPILE", None) == "True"
 USE_TAESD = os.environ.get("USE_TAESD", None) == "True"
 default_host = os.getenv("HOST", "0.0.0.0")
 default_port = int(os.getenv("PORT", "7860"))
@@ -61,7 +62,7 @@ parser.add_argument(
     "--oneflow-compile",
     "--oneflow_compile",
     type=bool,
-    default=False,
+    default=ONEFLOW_COMPILE,
     help="User Oneflow compile https://github.com/Oneflow-Inc/oneflow",
 )
 parser.add_argument(
