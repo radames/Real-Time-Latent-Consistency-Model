@@ -69,7 +69,8 @@
 </script>
 
 <main class="container mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4">
-  <article class="text-center">
+  <!--article class="text-center">
+    
     <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
     {#if pipelineInfo?.title?.default}
       <h3 class="text-xl font-bold">{pipelineInfo?.title?.default}</h3>
@@ -106,7 +107,7 @@
         > and run it on your own GPU.
       </p>
     {/if}
-  </article>
+  </article-->
   {#if pipelineParams}
     <article class="my-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
       {#if isImageMode}
