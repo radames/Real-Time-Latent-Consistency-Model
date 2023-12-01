@@ -43,11 +43,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
             await websocket.send_json(
                 {"status": "connected", "message": "Connected", "userId": str(user_id)}
             )
-            await websocket.send_json(
-                {
-                    "status": "send_frame",
-                }
-            )
+            await websocket.send_json({"status": "send_frame"})
             await handle_websocket_data(user_id, websocket)
         except WebSocketDisconnect as e:
             logging.error(f"WebSocket Error: {e}, {user_id}")
@@ -73,13 +69,12 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                 params = SimpleNamespace(**params.dict())
                 if info.input_mode == "image":
                     image_data = await websocket.receive_bytes()
+                    if len(image_data) == 0:
+                        await websocket.send_json({"status": "send_frame"})
+                        continue
                     params.image = bytes_to_pil(image_data)
                 await user_data.update_data(user_id, params)
-                await websocket.send_json(
-                    {
-                        "status": "wait",
-                    }
-                )
+                await websocket.send_json({"status": "wait"})
                 if args.timeout > 0 and time.time() - last_time > args.timeout:
                     await websocket.send_json(
                         {
@@ -112,11 +107,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                 while True:
                     params = await user_data.get_latest_data(user_id)
                     if not vars(params) or params.__dict__ == last_params.__dict__:
-                        await websocket.send_json(
-                            {
-                                "status": "send_frame",
-                            }
-                        )
+                        await websocket.send_json({"status": "send_frame"})
                         await asyncio.sleep(0.1)
                         continue
 
