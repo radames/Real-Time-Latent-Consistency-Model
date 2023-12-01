@@ -14,6 +14,7 @@ import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
+import math
 
 base_model = "stabilityai/sdxl-turbo"
 taesd_model = "madebyollin/taesd"
@@ -151,10 +152,8 @@ class Pipeline:
         )
         steps = params.steps
         strength = params.strength
-        if steps <= 1:
-            strength = 1
-        else:
-            strength = 1 / steps
+        if int(steps * strength) < 1:
+            steps = math.ceil(1 / max(0.10, strength))
 
         results = self.pipe(
             image=params.image,

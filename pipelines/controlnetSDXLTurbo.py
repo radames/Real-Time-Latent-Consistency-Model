@@ -16,6 +16,7 @@ import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
+import math
 
 controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
 model_id = "stabilityai/sdxl-turbo"
@@ -221,8 +222,8 @@ class Pipeline:
         )
         steps = params.steps
         strength = params.strength
-        if steps == 1:
-            strength = 1
+        if int(steps * strength) < 1:
+            steps = math.ceil(1 / max(0.10, strength))
 
         results = self.pipe(
             image=params.image,
