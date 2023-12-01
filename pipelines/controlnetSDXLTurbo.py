@@ -2,6 +2,7 @@ from diffusers import (
     StableDiffusionXLControlNetImg2ImgPipeline,
     ControlNetModel,
     AutoencoderKL,
+    AutoencoderTiny,
 )
 from compel import Compel, ReturnedEmbeddingsType
 import torch
@@ -20,6 +21,7 @@ import math
 
 controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
 model_id = "stabilityai/sdxl-turbo"
+taesd_model = "madebyollin/taesdxl"
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
@@ -75,18 +77,18 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
+            2, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            1024, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             1.0,
             min=0,
-            max=20,
+            max=10,
             step=0.001,
             title="Guidance Scale",
             field="range",
@@ -197,6 +199,10 @@ class Pipeline:
             returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
             requires_pooled=[False, True],
         )
+        if args.use_taesd:
+            self.pipe.vae = AutoencoderTiny.from_pretrained(
+                taesd_model, torch_dtype=torch_dtype, use_safetensors=True
+            ).to(device)
 
         if args.torch_compile:
             self.pipe.unet = torch.compile(

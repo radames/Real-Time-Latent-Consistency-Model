@@ -3,6 +3,7 @@ from diffusers import (
     ControlNetModel,
     LCMScheduler,
     AutoencoderKL,
+    AutoencoderTiny,
 )
 from compel import Compel, ReturnedEmbeddingsType
 import torch
@@ -17,10 +18,12 @@ import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
+import math
 
 controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 lcm_lora_id = "latent-consistency/lcm-lora-sdxl"
+taesd_model = "madebyollin/taesdxl"
 
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
@@ -77,7 +80,7 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
+            2, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
             1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
@@ -96,10 +99,10 @@ class Pipeline:
             id="guidance_scale",
         )
         strength: float = Field(
-            0.5,
+            1,
             min=0.25,
             max=1.0,
-            step=0.001,
+            step=0.0001,
             title="Strength",
             field="range",
             hide=True,
@@ -208,6 +211,10 @@ class Pipeline:
             returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
             requires_pooled=[False, True],
         )
+        if args.use_taesd:
+            self.pipe.vae = AutoencoderTiny.from_pretrained(
+                taesd_model, torch_dtype=torch_dtype, use_safetensors=True
+            ).to(device)
 
         if args.torch_compile:
             self.pipe.unet = torch.compile(
@@ -231,6 +238,10 @@ class Pipeline:
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
+        steps = params.steps
+        strength = params.strength
+        if int(steps * strength) < 1:
+            steps = math.ceil(1 / max(0.10, strength))
 
         results = self.pipe(
             image=params.image,
@@ -240,8 +251,8 @@ class Pipeline:
             negative_prompt_embeds=prompt_embeds[1:2],
             negative_pooled_prompt_embeds=pooled_prompt_embeds[1:2],
             generator=generator,
-            strength=params.strength,
-            num_inference_steps=params.steps,
+            strength=strength,
+            num_inference_steps=steps,
             guidance_scale=params.guidance_scale,
             width=params.width,
             height=params.height,

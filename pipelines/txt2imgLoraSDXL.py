@@ -1,8 +1,4 @@
-from diffusers import (
-    DiffusionPipeline,
-    LCMScheduler,
-    AutoencoderKL,
-)
+from diffusers import DiffusionPipeline, LCMScheduler, AutoencoderKL, AutoencoderTiny
 from compel import Compel, ReturnedEmbeddingsType
 import torch
 
@@ -16,9 +12,9 @@ from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
 
-controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 lcm_lora_id = "latent-consistency/lcm-lora-sdxl"
+taesd_model = "madebyollin/taesdxl"
 
 
 default_prompt = "close-up photography of old man standing in the rain at night, in a street lit by lamps, leica 35mm summilux"
@@ -76,7 +72,7 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
+            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
             1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
@@ -127,6 +123,10 @@ class Pipeline:
             returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
             requires_pooled=[False, True],
         )
+        if args.use_taesd:
+            self.pipe.vae = AutoencoderTiny.from_pretrained(
+                taesd_model, torch_dtype=torch_dtype, use_safetensors=True
+            ).to(device)
 
         if args.torch_compile:
             self.pipe.unet = torch.compile(

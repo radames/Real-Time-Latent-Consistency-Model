@@ -2,6 +2,7 @@ from diffusers import (
     StableDiffusionControlNetImg2ImgPipeline,
     ControlNetModel,
     LCMScheduler,
+    AutoencoderTiny,
 )
 from compel import Compel
 import torch
@@ -16,6 +17,7 @@ import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
+import math
 
 taesd_model = "madebyollin/taesd"
 controlnet_model = "lllyasviel/control_v11p_sd15_canny"
@@ -79,13 +81,13 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
+            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             0.2,
@@ -200,6 +202,11 @@ class Pipeline:
             if psutil.virtual_memory().total < 64 * 1024**3:
                 pipe.enable_attention_slicing()
 
+            if args.use_taesd:
+                pipe.vae = AutoencoderTiny.from_pretrained(
+                    taesd_model, torch_dtype=torch_dtype, use_safetensors=True
+                ).to(device)
+
             # Load LCM LoRA
             pipe.load_lora_weights(lcm_lora_id, adapter_name="lcm")
             pipe.compel_proc = Compel(
@@ -222,7 +229,6 @@ class Pipeline:
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
-        print(f"Using model: {params.base_model_id}")
         pipe = self.pipes[params.base_model_id]
 
         activation_token = base_models[params.base_model_id]
@@ -231,14 +237,18 @@ class Pipeline:
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
+        steps = params.steps
+        strength = params.strength
+        if int(steps * strength) < 1:
+            steps = math.ceil(1 / max(0.10, strength))
 
         results = pipe(
             image=params.image,
             control_image=control_image,
             prompt_embeds=prompt_embeds,
             generator=generator,
-            strength=params.strength,
-            num_inference_steps=params.steps,
+            strength=strength,
+            num_inference_steps=steps,
             guidance_scale=params.guidance_scale,
             width=params.width,
             height=params.height,

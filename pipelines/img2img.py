@@ -14,6 +14,7 @@ import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
+import math
 
 base_model = "SimianLuo/LCM_Dreamshaper_v7"
 taesd_model = "madebyollin/taesd"
@@ -64,13 +65,13 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
+            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             0.2,
@@ -104,7 +105,7 @@ class Pipeline:
         if args.use_taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
-            )
+            ).to(device)
 
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
@@ -138,12 +139,18 @@ class Pipeline:
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
         prompt_embeds = self.compel_proc(params.prompt)
+
+        steps = params.steps
+        strength = params.strength
+        if int(steps * strength) < 1:
+            steps = math.ceil(1 / max(0.10, strength))
+
         results = self.pipe(
             image=params.image,
             prompt_embeds=prompt_embeds,
             generator=generator,
-            strength=params.strength,
-            num_inference_steps=params.steps,
+            strength=strength,
+            num_inference_steps=steps,
             guidance_scale=params.guidance_scale,
             width=params.width,
             height=params.height,

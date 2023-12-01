@@ -17,7 +17,7 @@ from PIL import Image
 import math
 
 base_model = "stabilityai/sdxl-turbo"
-taesd_model = "madebyollin/taesd"
+taesd_model = "madebyollin/taesdxl"
 
 default_prompt = "close-up photography of old man standing in the rain at night, in a street lit by lamps, leica 35mm summilux"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
@@ -113,7 +113,7 @@ class Pipeline:
         if args.use_taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
-            )
+            ).to(device)
 
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
