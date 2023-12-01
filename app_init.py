@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
+import markdown2
 
 import logging
 import traceback
@@ -13,6 +14,7 @@ import time
 from types import SimpleNamespace
 from util import pil_to_frame, bytes_to_pil, is_firefox
 import asyncio
+import os
 
 
 def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
@@ -41,11 +43,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
             await websocket.send_json(
                 {"status": "connected", "message": "Connected", "userId": str(user_id)}
             )
-            await websocket.send_json(
-                {
-                    "status": "send_frame",
-                }
-            )
+            await websocket.send_json({"status": "send_frame"})
             await handle_websocket_data(user_id, websocket)
         except WebSocketDisconnect as e:
             logging.error(f"WebSocket Error: {e}, {user_id}")
@@ -71,13 +69,12 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                 params = SimpleNamespace(**params.dict())
                 if info.input_mode == "image":
                     image_data = await websocket.receive_bytes()
+                    if len(image_data) == 0:
+                        await websocket.send_json({"status": "send_frame"})
+                        continue
                     params.image = bytes_to_pil(image_data)
                 await user_data.update_data(user_id, params)
-                await websocket.send_json(
-                    {
-                        "status": "wait",
-                    }
-                )
+                await websocket.send_json({"status": "wait"})
                 if args.timeout > 0 and time.time() - last_time > args.timeout:
                     await websocket.send_json(
                         {
@@ -110,12 +107,8 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                 while True:
                     params = await user_data.get_latest_data(user_id)
                     if not vars(params) or params.__dict__ == last_params.__dict__:
-                        await websocket.send_json(
-                            {
-                                "status": "send_frame",
-                            }
-                        )
-                        await asyncio.sleep(0.01)
+                        await websocket.send_json({"status": "send_frame"})
+                        await asyncio.sleep(0.1)
                         continue
 
                     last_params = params
@@ -145,14 +138,22 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
     # route to setup frontend
     @app.get("/settings")
     async def settings():
-        info = pipeline.Info.schema()
+        info_schema = pipeline.Info.schema()
+        info = pipeline.Info()
+        if info.page_content:
+            page_content = markdown2.markdown(info.page_content)
+
         input_params = pipeline.InputParams.schema()
         return JSONResponse(
             {
-                "info": info,
+                "info": info_schema,
                 "input_params": input_params,
                 "max_queue_size": args.max_queue_size,
+                "page_content": page_content if info.page_content else "",
             }
         )
+
+    if not os.path.exists("public"):
+        os.makedirs("public")
 
     app.mount("/", StaticFiles(directory="public", html=True), name="public")

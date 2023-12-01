@@ -127,6 +127,13 @@ docker build -t lcm-live .
 docker run -ti -p 7860:7860 --gpus all lcm-live
 ```
 
+reuse models data from host to avoid downloading them again, you can change `~/.cache/huggingface` to any other directory, but if you use hugingface-cli locally, you can share the same cache
+
+```bash
+docker run -ti -p 7860:7860 -e HF_HOME=/data -v ~/.cache/huggingface:/data  --gpus all lcm-live
+```
+ 
+
 or with environment variables
 
 ```bash

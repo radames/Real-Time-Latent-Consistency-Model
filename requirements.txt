@@ -1,4 +1,4 @@
-git+https://github.com/huggingface/diffusers@7457aa67cb5c75132c38507080697b7cc7c4d9e6
+git+https://github.com/huggingface/diffusers@dadd55fb36acc862254cf935826d54349b0fcd8c
 transformers==4.35.2
 --extra-index-url https://download.pytorch.org/whl/cu121;
 torch==2.1.0
@@ -10,3 +10,4 @@ compel==2.0.2
 controlnet-aux==0.0.7
 peft==0.6.0
 xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
+markdown2

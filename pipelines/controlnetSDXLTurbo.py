@@ -1,7 +1,6 @@
 from diffusers import (
     StableDiffusionXLControlNetImg2ImgPipeline,
     ControlNetModel,
-    LCMScheduler,
     AutoencoderKL,
     AutoencoderTiny,
 )
@@ -21,25 +20,23 @@ from PIL import Image
 import math
 
 controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
-model_id = "stabilityai/stable-diffusion-xl-base-1.0"
-lcm_lora_id = "latent-consistency/lcm-lora-sdxl"
+model_id = "stabilityai/sdxl-turbo"
 taesd_model = "madebyollin/taesdxl"
-
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
 page_content = """
-<h1 class="text-3xl font-bold">Real-Time Latent Consistency Model SDXL</h1>
-<h3 class="text-xl font-bold">SDXL + LCM + LoRA + Controlnet</h3>
+<h1 class="text-3xl font-bold">Real-Time SDXL Turbo</h1>
+<h3 class="text-xl font-bold">Image-to-Image ControlNet</h3>
 <p class="text-sm">
     This demo showcases
     <a
-    href="https://huggingface.co/blog/lcm_lora"
+    href="https://huggingface.co/stabilityai/sdxl-turbo"
     target="_blank"
-    class="text-blue-500 underline hover:no-underline">LCM LoRA</a>
-+ SDXL + Controlnet + Image to Image pipeline using
+    class="text-blue-500 underline hover:no-underline">SDXL Turbo</a>
+Image to Image pipeline using
     <a
-    href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
+    href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/sdxl_turbo"
     target="_blank"
     class="text-blue-500 underline hover:no-underline">Diffusers</a
     > with a MJPEG stream server.
@@ -56,8 +53,8 @@ page_content = """
 
 class Pipeline:
     class Info(BaseModel):
-        name: str = "controlnet+loras+sdxl"
-        title: str = "SDXL + LCM + LoRA + Controlnet"
+        name: str = "controlnet+SDXL+Turbo"
+        title: str = "SDXL Turbo + Controlnet"
         description: str = "Generates an image from a text prompt"
         input_mode: str = "image"
         page_content: str = page_content
@@ -91,7 +88,7 @@ class Pipeline:
         guidance_scale: float = Field(
             1.0,
             min=0,
-            max=20,
+            max=10,
             step=0.001,
             title="Guidance Scale",
             field="range",
@@ -99,10 +96,10 @@ class Pipeline:
             id="guidance_scale",
         )
         strength: float = Field(
-            1,
+            0.5,
             min=0.25,
             max=1.0,
-            step=0.0001,
+            step=0.001,
             title="Strength",
             field="range",
             hide=True,
@@ -187,16 +184,7 @@ class Pipeline:
                 vae=vae,
             )
         self.canny_torch = SobelOperator(device=device)
-        # Load LCM LoRA
-        self.pipe.load_lora_weights(lcm_lora_id, adapter_name="lcm")
-        self.pipe.load_lora_weights(
-            "CiroN2022/toy-face",
-            weight_name="toy_face_sdxl.safetensors",
-            adapter_name="toy",
-        )
-        self.pipe.set_adapters(["lcm", "toy"], adapter_weights=[1.0, 0.8])
 
-        self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype).to(device)
         if device.type != "mps":

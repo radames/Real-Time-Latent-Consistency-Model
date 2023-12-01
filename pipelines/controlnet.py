@@ -16,12 +16,38 @@ import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
+import math
 
 base_model = "SimianLuo/LCM_Dreamshaper_v7"
 taesd_model = "madebyollin/taesd"
 controlnet_model = "lllyasviel/control_v11p_sd15_canny"
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
+page_content = """
+<h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
+<h3 class="text-xl font-bold">LCM + Controlnet Canny</h3>
+<p class="text-sm">
+    This demo showcases
+    <a
+    href="https://huggingface.co/blog/lcm_lora"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">LCM LoRA</a
+    >
+    ControlNet + Image to Image pipeline using
+    <a
+    href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Diffusers</a
+    > with a MJPEG stream server.
+</p>
+<p class="text-sm text-gray-500">
+    Change the prompt to generate different images, accepts <a
+    href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Compel</a
+    > syntax.
+</p>
+"""
 
 
 class Pipeline:
@@ -30,6 +56,7 @@ class Pipeline:
         title: str = "LCM + Controlnet"
         description: str = "Generates an image from a text prompt"
         input_mode: str = "image"
+        page_content: str = page_content
 
     class InputParams(BaseModel):
         prompt: str = Field(
@@ -42,13 +69,13 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
+            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             0.2,
@@ -148,7 +175,7 @@ class Pipeline:
         if args.use_taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
-            )
+            ).to(device)
         self.canny_torch = SobelOperator(device=device)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
@@ -192,14 +219,18 @@ class Pipeline:
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
+        steps = params.steps
+        strength = params.strength
+        if int(steps * strength) < 1:
+            steps = math.ceil(1 / max(0.10, strength))
 
         results = self.pipe(
             image=params.image,
             control_image=control_image,
             prompt_embeds=prompt_embeds,
             generator=generator,
-            strength=params.strength,
-            num_inference_steps=params.steps,
+            strength=strength,
+            num_inference_steps=steps,
             guidance_scale=params.guidance_scale,
             width=params.width,
             height=params.height,
