@@ -23,6 +23,31 @@ lcm_lora_id = "latent-consistency/lcm-lora-sdxl"
 
 default_prompt = "close-up photography of old man standing in the rain at night, in a street lit by lamps, leica 35mm summilux"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
+page_content = """
+<h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
+<h3 class="text-xl font-bold">Text-to-Image SDXL + LCM + LoRA</h3>
+<p class="text-sm">
+    This demo showcases
+    <a
+    href="https://huggingface.co/blog/lcm_lora"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">LCM LoRA</a
+    >
+    Text to Image pipeline using
+    <a
+    href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Diffusers</a
+    > with a MJPEG stream server.
+</p>
+<p class="text-sm text-gray-500">
+    Change the prompt to generate different images, accepts <a
+    href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Compel</a
+    > syntax.
+</p>
+"""
 
 
 class Pipeline:
@@ -30,6 +55,7 @@ class Pipeline:
         name: str = "LCM+Lora+SDXL"
         title: str = "Text-to-Image SDXL + LCM + LoRA"
         description: str = "Generates an image from a text prompt"
+        page_content: str = page_content
         input_mode: str = "text"
 
     class InputParams(BaseModel):

@@ -22,25 +22,42 @@ controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 lcm_lora_id = "latent-consistency/lcm-lora-sdxl"
 
-# # base model with activation token, it will prepend the prompt with the activation token
-base_models = {
-    "plasmo/woolitize": "woolitize",
-    "nitrosocke/Ghibli-Diffusion": "ghibli style",
-    "nitrosocke/mo-di-diffusion": "modern disney style",
-}
-# lcm_lora_id = "latent-consistency/lcm-lora-sdv1-5"
-
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
+page_content = """
+<h1 class="text-3xl font-bold">Real-Time Latent Consistency Model SDXL</h1>
+<h3 class="text-xl font-bold">SDXL + LCM + LoRA + Controlnet</h3>
+<p class="text-sm">
+    This demo showcases
+    <a
+    href="https://huggingface.co/blog/lcm_lora"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">LCM LoRA</a>
++ SDXL + Controlnet + Image to Image pipeline using
+    <a
+    href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Diffusers</a
+    > with a MJPEG stream server.
+</p>
+<p class="text-sm text-gray-500">
+    Change the prompt to generate different images, accepts <a
+    href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Compel</a
+    > syntax.
+</p>
+"""
 
 
 class Pipeline:
     class Info(BaseModel):
         name: str = "controlnet+loras+sdxl"
-        title: str = "SDXL + LCM + LoRA + Controlnet "
+        title: str = "SDXL + LCM + LoRA + Controlnet"
         description: str = "Generates an image from a text prompt"
         input_mode: str = "image"
+        page_content: str = page_content
 
     class InputParams(BaseModel):
         prompt: str = Field(
@@ -63,10 +80,10 @@ class Pipeline:
             4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            1024, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             1.0,

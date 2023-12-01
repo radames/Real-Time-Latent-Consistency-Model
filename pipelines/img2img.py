@@ -19,6 +19,30 @@ base_model = "SimianLuo/LCM_Dreamshaper_v7"
 taesd_model = "madebyollin/taesd"
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
+page_content = """
+<h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
+<h3 class="text-xl font-bold">Image-to-Image LCM</h3>
+<p class="text-sm">
+    This demo showcases
+    <a
+    href="https://huggingface.co/blog/lcm_lora"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">LCM</a>
+Image to Image pipeline using
+    <a
+    href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Diffusers</a
+    > with a MJPEG stream server.
+</p>
+<p class="text-sm text-gray-500">
+    Change the prompt to generate different images, accepts <a
+    href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Compel</a
+    > syntax.
+</p>
+"""
 
 
 class Pipeline:
@@ -27,6 +51,7 @@ class Pipeline:
         title: str = "Image-to-Image LCM"
         description: str = "Generates an image from a text prompt"
         input_mode: str = "image"
+        page_content: str = page_content
 
     class InputParams(BaseModel):
         prompt: str = Field(

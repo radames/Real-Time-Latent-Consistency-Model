@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
+import markdown2
 
 import logging
 import traceback
@@ -144,13 +145,18 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
     # route to setup frontend
     @app.get("/settings")
     async def settings():
-        info = pipeline.Info.schema()
+        info_schema = pipeline.Info.schema()
+        info = pipeline.Info()
+        if info.page_content:
+            page_content = markdown2.markdown(info.page_content)
+
         input_params = pipeline.InputParams.schema()
         return JSONResponse(
             {
-                "info": info,
+                "info": info_schema,
                 "input_params": input_params,
                 "max_queue_size": args.max_queue_size,
+                "page_content": page_content if info.page_content else "",
             }
         )
 

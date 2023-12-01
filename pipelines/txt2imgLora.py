@@ -18,6 +18,34 @@ taesd_model = "madebyollin/taesd"
 
 default_prompt = "Analog style photograph of young Harrison Ford as Han Solo, star wars behind the scenes"
 
+page_content = """
+<h1 class="text-3xl font-bold">Real-Time Latent Consistency Model SDv1.5</h1>
+<h3 class="text-xl font-bold">Text-to-Image LCM + LoRa</h3>
+<p class="text-sm">
+    This demo showcases
+    <a
+    href="https://huggingface.co/blog/lcm_lora"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">LCM</a>
+Image to Image pipeline using
+    <a
+    href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Diffusers</a
+    > with a MJPEG stream server. Featuring <a
+    href="https://huggingface.co/wavymulder/Analog-Diffusion"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Analog-Diffusion</a>
+</p>
+<p class="text-sm text-gray-500">
+    Change the prompt to generate different images, accepts <a
+    href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
+    target="_blank"
+    class="text-blue-500 underline hover:no-underline">Compel</a
+    > syntax.
+</p>
+"""
+
 
 class Pipeline:
     class Info(BaseModel):
@@ -25,6 +53,7 @@ class Pipeline:
         title: str = "Text-to-Image LCM + LoRa"
         description: str = "Generates an image from a text prompt"
         input_mode: str = "text"
+        page_content: str = page_content
 
     class InputParams(BaseModel):
         prompt: str = Field(

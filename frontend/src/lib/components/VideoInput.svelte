@@ -10,21 +10,23 @@
     mediaDevices
   } from '$lib/mediaStream';
   import MediaListSwitcher from './MediaListSwitcher.svelte';
+  export let width = 512;
+  export let height = 512;
+  const size = { width, height };
 
   let videoEl: HTMLVideoElement;
   let canvasEl: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
   let videoFrameCallbackId: number;
-  const WIDTH = 768;
-  const HEIGHT = 768;
+
   // ajust the throttle time to your needs
   const THROTTLE_TIME = 1000 / 15;
   let selectedDevice: string = '';
 
   onMount(() => {
     ctx = canvasEl.getContext('2d') as CanvasRenderingContext2D;
-    canvasEl.width = WIDTH;
-    canvasEl.height = HEIGHT;
+    canvasEl.width = size.width;
+    canvasEl.height = size.height;
   });
   $: {
     console.log(selectedDevice);
@@ -46,10 +48,10 @@
     const videoHeight = videoEl.videoHeight;
     const blob = await grapCropBlobImg(
       videoEl,
-      videoWidth / 2 - WIDTH / 2,
-      videoHeight / 2 - HEIGHT / 2,
-      WIDTH,
-      HEIGHT
+      videoWidth / 2 - size.width / 2,
+      videoHeight / 2 - size.height / 2,
+      size.width,
+      size.height
     );
 
     onFrameChangeStore.set({ blob });

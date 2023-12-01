@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { FieldProps, PipelineInfo } from '$lib/types';
+  import type { Fields, PipelineInfo } from '$lib/types';
   import { PipelineMode } from '$lib/types';
   import ImagePlayer from '$lib/components/ImagePlayer.svelte';
   import VideoInput from '$lib/components/VideoInput.svelte';
@@ -11,8 +11,9 @@
   import { mediaStreamActions, onFrameChangeStore } from '$lib/mediaStream';
   import { getPipelineValues, deboucedPipelineValues } from '$lib/store';
 
-  let pipelineParams: FieldProps[];
+  let pipelineParams: Fields;
   let pipelineInfo: PipelineInfo;
+  let pageContent: string;
   let isImageMode: boolean = false;
   let maxQueueSize: number = 0;
   let currentQueueSize: number = 0;
@@ -22,11 +23,12 @@
 
   async function getSettings() {
     const settings = await fetch('/settings').then((r) => r.json());
-    pipelineParams = Object.values(settings.input_params.properties);
+    pipelineParams = settings.input_params.properties;
     pipelineInfo = settings.info.properties;
     isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
     maxQueueSize = settings.max_queue_size;
-    pipelineParams = pipelineParams.filter((e) => e?.disabled !== true);
+    pageContent = settings.page_content;
+    console.log(pipelineParams);
     if (maxQueueSize > 0) {
       getQueueSize();
       setInterval(() => {
@@ -70,31 +72,9 @@
 
 <main class="container mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4">
   <article class="text-center">
-    <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model</h1>
-    {#if pipelineInfo?.title?.default}
-      <h3 class="text-xl font-bold">{pipelineInfo?.title?.default}</h3>
+    {#if pageContent}
+      {@html pageContent}
     {/if}
-    <p class="text-sm">
-      This demo showcases
-      <a
-        href="https://huggingface.co/blog/lcm_lora"
-        target="_blank"
-        class="text-blue-500 underline hover:no-underline">LCM LoRA</a
-      >
-      Image to Image pipeline using
-      <a
-        href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/lcm#performing-inference-with-lcm"
-        target="_blank"
-        class="text-blue-500 underline hover:no-underline">Diffusers</a
-      > with a MJPEG stream server.
-    </p>
-    <p class="text-sm text-gray-500">
-      Change the prompt to generate different images, accepts <a
-        href="https://github.com/damian0815/compel/blob/main/doc/syntax.md"
-        target="_blank"
-        class="text-blue-500 underline hover:no-underline">Compel</a
-      > syntax.
-    </p>
     {#if maxQueueSize > 0}
       <p class="text-sm">
         There are <span id="queue_size" class="font-bold">{currentQueueSize}</span>
@@ -111,7 +91,10 @@
     <article class="my-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
       {#if isImageMode}
         <div class="sm:col-start-1">
-          <VideoInput></VideoInput>
+          <VideoInput
+            width={Number(pipelineParams.width.default)}
+            height={Number(pipelineParams.height.default)}
+          ></VideoInput>
         </div>
       {/if}
       <div class={isImageMode ? 'sm:col-start-2' : 'col-span-2'}>
