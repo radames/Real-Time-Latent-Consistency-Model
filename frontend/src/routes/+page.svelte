@@ -70,6 +70,12 @@
   }
 </script>
 
+<svelte:head>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.contentWindow.min.js"
+  ></script>
+</svelte:head>
+
 <main class="container mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4">
   <article class="text-center">
     {#if pageContent}
