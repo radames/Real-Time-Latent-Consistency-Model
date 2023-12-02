@@ -32,9 +32,9 @@ page_content = """
 <p class="text-sm">
     This demo showcases
     <a
-    href="https://huggingface.co/stabilityai/sdxl-turbo"
+    href="https://huggingface.co/stabilityai/sd-turbo"
     target="_blank"
-    class="text-blue-500 underline hover:no-underline">SDXL Turbo</a>
+    class="text-blue-500 underline hover:no-underline">SD Turbo</a>
 Image to Image pipeline using
     <a
     href="https://huggingface.co/docs/diffusers/main/en/using-diffusers/sdxl_turbo"
