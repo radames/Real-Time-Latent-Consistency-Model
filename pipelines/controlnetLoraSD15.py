@@ -180,7 +180,7 @@ class Pipeline:
                     base_model_id,
                     controlnet=controlnet_canny,
                 )
-            self.pipes[base_model_id] = pipe
+                self.pipes[base_model_id] = pipe
         else:
             for base_model_id in base_models.keys():
                 pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
