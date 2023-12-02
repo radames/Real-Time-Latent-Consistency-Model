@@ -100,7 +100,7 @@ class Pipeline:
             id="strength",
         )
         controlnet_scale: float = Field(
-            0.2,
+            0.325,
             min=0,
             max=1.0,
             step=0.001,
