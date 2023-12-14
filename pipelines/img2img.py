@@ -42,10 +42,10 @@ class Pipeline:
             4, min=2, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            100, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            100, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             0.2,
