@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd frontend
+
 # Download and install NVM (Node Version Manager)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
@@ -11,3 +13,4 @@ export NVM_DIR="$HOME/.nvm"
 # Install the latest version of Node.js using NVM
 nvm install node
 npm run build
+cd ..
