@@ -12,5 +12,6 @@ export NVM_DIR="$HOME/.nvm"
 
 # Install the latest version of Node.js using NVM
 nvm install node
+npm install vite --save-dev
 npm run build
 cd ..
