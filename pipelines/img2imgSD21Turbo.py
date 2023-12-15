@@ -72,7 +72,7 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
+            1, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
             512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
