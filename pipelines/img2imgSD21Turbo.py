@@ -80,16 +80,6 @@ class Pipeline:
         height: int = Field(
             512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
-        guidance_scale: float = Field(
-            0.0,
-            min=0,
-            max=1,
-            step=0.001,
-            title="Guidance Scale",
-            field="range",
-            hide=True,
-            id="guidance_scale",
-        )
         strength: float = Field(
             0.5,
             min=0.25,
@@ -168,7 +158,7 @@ class Pipeline:
             generator=generator,
             strength=strength,
             num_inference_steps=steps,
-            guidance_scale=params.guidance_scale,
+            guidance_scale=1.0,
             width=params.width,
             height=params.height,
             output_type="pil",
