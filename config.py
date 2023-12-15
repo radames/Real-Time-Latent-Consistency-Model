@@ -16,6 +16,8 @@ class Args(NamedTuple):
     pipeline: str
     ssl_certfile: str
     ssl_keyfile: str
+    compel: bool = False
+    debug: bool = False
 
 
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
@@ -82,6 +84,18 @@ parser.add_argument(
     type=str,
     default=None,
     help="SSL keyfile",
+)
+parser.add_argument(
+    "--debug",
+    type=bool,
+    default=False,
+    help="Debug",
+)
+parser.add_argument(
+    "--compel",
+    type=bool,
+    default=False,
+    help="Compel",
 )
 
 args = Args(**vars(parser.parse_args()))

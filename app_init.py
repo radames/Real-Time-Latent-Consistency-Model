@@ -15,6 +15,7 @@ from types import SimpleNamespace
 from util import pil_to_frame, bytes_to_pil, is_firefox
 import asyncio
 import os
+import time
 
 
 def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
@@ -105,6 +106,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                 websocket = user_data.get_websocket(user_id)
                 last_params = SimpleNamespace()
                 while True:
+                    last_time = time.time()
                     params = await user_data.get_latest_data(user_id)
                     if not vars(params) or params.__dict__ == last_params.__dict__:
                         await websocket.send_json({"status": "send_frame"})
@@ -122,6 +124,8 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                     if not is_firefox(request.headers["user-agent"]):
                         yield frame
                     await websocket.send_json({"status": "send_frame"})
+                    if args.debug:
+                        print(f"Time taken: {time.time() - last_time}")
 
             return StreamingResponse(
                 generate(),
