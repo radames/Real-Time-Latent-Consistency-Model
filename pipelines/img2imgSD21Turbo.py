@@ -99,7 +99,7 @@ class Pipeline:
                 base_model,
                 safety_checker=None,
             )
-        if args.use_taesd:
+        if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)
@@ -158,7 +158,7 @@ class Pipeline:
             generator=generator,
             strength=strength,
             num_inference_steps=steps,
-            guidance_scale=1.0,
+            guidance_scale=1.1,
             width=params.width,
             height=params.height,
             output_type="pil",

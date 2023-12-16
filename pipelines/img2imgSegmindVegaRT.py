@@ -116,7 +116,7 @@ class Pipeline:
                 safety_checker=None,
                 variant="fp16",
             )
-        if args.use_taesd:
+        if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)

@@ -12,7 +12,7 @@ print("TORCH_DTYPE:", torch_dtype)
 print("PIPELINE:", args.pipeline)
 print("SAFETY_CHECKER:", args.safety_checker)
 print("TORCH_COMPILE:", args.torch_compile)
-print("USE_TAESD:", args.use_taesd)
+print("USE_TAESD:", args.taesd)
 print("COMPEL:", args.compel)
 print("DEBUG:", args.debug)
 

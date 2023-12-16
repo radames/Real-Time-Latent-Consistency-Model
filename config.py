@@ -12,7 +12,7 @@ class Args(NamedTuple):
     timeout: float
     safety_checker: bool
     torch_compile: bool
-    use_taesd: bool
+    taesd: bool
     pipeline: str
     ssl_certfile: str
     ssl_keyfile: str
@@ -24,7 +24,7 @@ MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None) == "True"
 TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None) == "True"
-USE_TAESD = os.environ.get("USE_TAESD", None) == "True"
+USE_TAESD = os.environ.get("USE_TAESD", "True") == "True"
 default_host = os.getenv("HOST", "0.0.0.0")
 default_port = int(os.getenv("PORT", "7860"))
 default_mode = os.getenv("MODE", "default")
@@ -38,7 +38,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--max-queue-size",
-    "--max_queue_size",
+    dest="max_queue_size",
     type=int,
     default=MAX_QUEUE_SIZE,
     help="Max Queue Size",
@@ -46,23 +46,28 @@ parser.add_argument(
 parser.add_argument("--timeout", type=float, default=TIMEOUT, help="Timeout")
 parser.add_argument(
     "--safety-checker",
-    "--safety_checker",
+    dest="safety_checker",
     action="store_true",
     default=SAFETY_CHECKER,
     help="Safety Checker",
 )
 parser.add_argument(
     "--torch-compile",
-    "--torch_compile",
+    dest="torch_compile",
     action="store_true",
     default=TORCH_COMPILE,
     help="Torch Compile",
 )
 parser.add_argument(
-    "--use-taesd",
-    "--use_taesd",
+    "--taesd",
+    dest="taesd",
     action="store_true",
-    default=USE_TAESD,
+    help="Use Tiny Autoencoder",
+)
+parser.add_argument(
+    "--no-taesd",
+    dest="taesd",
+    action="store_false",
     help="Use Tiny Autoencoder",
 )
 parser.add_argument(
@@ -73,14 +78,14 @@ parser.add_argument(
 )
 parser.add_argument(
     "--ssl-certfile",
-    "--ssl_certfile",
+    dest="ssl_certfile",
     type=str,
     default=None,
     help="SSL certfile",
 )
 parser.add_argument(
     "--ssl-keyfile",
-    "--ssl_keyfile",
+    dest="ssl_keyfile",
     type=str,
     default=None,
     help="SSL keyfile",
@@ -97,5 +102,6 @@ parser.add_argument(
     default=False,
     help="Compel",
 )
+parser.set_defaults(taesd=USE_TAESD)
 
 args = Args(**vars(parser.parse_args()))

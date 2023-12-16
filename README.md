@@ -28,8 +28,9 @@ python -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 cd frontend && npm install && npm run build && cd ..
-python run.py --reload --pipeline controlnet
-```
+# fastest pipeline
+python run.py --reload --pipeline img2imgSD21Turbo 
+ ```
 
 # Pipelines
 You can build your own pipeline following examples here [here](pipelines),

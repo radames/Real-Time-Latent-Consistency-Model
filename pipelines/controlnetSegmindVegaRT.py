@@ -208,7 +208,7 @@ class Pipeline:
                 returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
                 requires_pooled=[False, True],
             )
-        if args.use_taesd:
+        if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)

@@ -202,7 +202,7 @@ class Pipeline:
             if psutil.virtual_memory().total < 64 * 1024**3:
                 pipe.enable_attention_slicing()
 
-            if args.use_taesd:
+            if args.taesd:
                 pipe.vae = AutoencoderTiny.from_pretrained(
                     taesd_model, torch_dtype=torch_dtype, use_safetensors=True
                 ).to(device)
