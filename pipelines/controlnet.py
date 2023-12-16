@@ -210,6 +210,7 @@ class Pipeline:
         prompt = params.prompt
         if hasattr(self, "compel_proc"):
             prompt_embeds = self.compel_proc(params.prompt)
+            prompt = None
 
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
