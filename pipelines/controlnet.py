@@ -69,18 +69,18 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
+            2, min=1, max=6, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
-            0.2,
+            0.0,
             min=0,
-            max=5,
+            max=2,
             step=0.001,
             title="Guidance Scale",
             field="range",
@@ -196,16 +196,21 @@ class Pipeline:
                 image=[Image.new("RGB", (768, 768))],
                 control_image=[Image.new("RGB", (768, 768))],
             )
-
-        self.compel_proc = Compel(
-            tokenizer=self.pipe.tokenizer,
-            text_encoder=self.pipe.text_encoder,
-            truncate_long_prompts=False,
-        )
+        if args.compel:
+            self.compel_proc = Compel(
+                tokenizer=self.pipe.tokenizer,
+                text_encoder=self.pipe.text_encoder,
+                truncate_long_prompts=False,
+            )
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
-        prompt_embeds = self.compel_proc(params.prompt)
+        prompt_embeds = None
+        control_image = None
+        prompt = params.prompt
+        if hasattr(self, "compel_proc"):
+            prompt_embeds = self.compel_proc(params.prompt)
+
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
@@ -218,6 +223,7 @@ class Pipeline:
             image=params.image,
             control_image=control_image,
             prompt_embeds=prompt_embeds,
+            prompt=prompt,
             generator=generator,
             strength=strength,
             num_inference_steps=steps,
