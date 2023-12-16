@@ -1,4 +1,4 @@
-git+https://github.com/huggingface/diffusers@29dfe22a8e6f1ea1e1f6cd4fbb8381f08064091e
+git+https://github.com/huggingface/diffusers@2d94c7838e273c40920ffd6d24d724357add7f2d
 transformers==4.35.2
 --extra-index-url https://download.pytorch.org/whl/cu121;
 torch==2.1.0
