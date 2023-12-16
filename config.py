@@ -47,21 +47,21 @@ parser.add_argument("--timeout", type=float, default=TIMEOUT, help="Timeout")
 parser.add_argument(
     "--safety-checker",
     "--safety_checker",
-    type=bool,
+    action="store_true",
     default=SAFETY_CHECKER,
     help="Safety Checker",
 )
 parser.add_argument(
     "--torch-compile",
     "--torch_compile",
-    type=bool,
+    action="store_true",
     default=TORCH_COMPILE,
     help="Torch Compile",
 )
 parser.add_argument(
     "--use-taesd",
     "--use_taesd",
-    type=bool,
+    action="store_true",
     default=USE_TAESD,
     help="Use Tiny Autoencoder",
 )
@@ -87,13 +87,13 @@ parser.add_argument(
 )
 parser.add_argument(
     "--debug",
-    type=bool,
+    action="store_true",
     default=False,
     help="Debug",
 )
 parser.add_argument(
     "--compel",
-    type=bool,
+    action="store_true",
     default=False,
     help="Compel",
 )
