@@ -6,6 +6,7 @@ colorTo: indigo
 sdk: docker
 pinned: false
 suggested_hardware: a10g-small
+disable_embedding: true
 ---
 
 # Real-Time Latent Consistency Model
