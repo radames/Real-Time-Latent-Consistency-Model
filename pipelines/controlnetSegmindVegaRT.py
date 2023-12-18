@@ -193,13 +193,23 @@ class Pipeline:
         self.pipe.scheduler = LCMScheduler.from_pretrained(
             base_model, subfolder="scheduler"
         )
+
+        if args.sfast:
+            from sfast.compilers.stable_diffusion_pipeline_compiler import (
+                compile,
+                CompilationConfig,
+            )
+
+            config = CompilationConfig.Default()
+            config.enable_xformers = True
+            config.enable_triton = True
+            config.enable_cuda_graph = True
+            self.pipe = compile(self.pipe, config=config)
+
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype).to(device)
         if device.type != "mps":
             self.pipe.unet.to(memory_format=torch.channels_last)
-
-        if psutil.virtual_memory().total < 64 * 1024**3:
-            self.pipe.enable_attention_slicing()
 
         if args.compel:
             self.pipe.compel_proc = Compel(

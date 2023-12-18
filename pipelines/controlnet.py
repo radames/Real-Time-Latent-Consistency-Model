@@ -185,6 +185,7 @@ class Pipeline:
             config.enable_triton = True
             config.enable_cuda_graph = True
             self.pipe = compile(self.pipe, config=config)
+
         self.canny_torch = SobelOperator(device=device)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
@@ -214,7 +215,6 @@ class Pipeline:
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
         prompt_embeds = None
-        control_image = None
         prompt = params.prompt
         if hasattr(self, "compel_proc"):
             prompt_embeds = self.compel_proc(params.prompt)

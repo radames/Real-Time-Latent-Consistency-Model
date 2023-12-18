@@ -81,7 +81,7 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
+            1, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
             768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
@@ -90,7 +90,7 @@ class Pipeline:
             768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
-            0.2,
+            1.0,
             min=0,
             max=2,
             step=0.001,
@@ -195,12 +195,8 @@ class Pipeline:
         for pipe in self.pipes.values():
             pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
             pipe.set_progress_bar_config(disable=True)
-            pipe.to(device=device, dtype=torch_dtype).to(device)
             if device.type != "mps":
                 pipe.unet.to(memory_format=torch.channels_last)
-
-            if psutil.virtual_memory().total < 64 * 1024**3:
-                pipe.enable_attention_slicing()
 
             if args.taesd:
                 pipe.vae = AutoencoderTiny.from_pretrained(
@@ -209,11 +205,13 @@ class Pipeline:
 
             # Load LCM LoRA
             pipe.load_lora_weights(lcm_lora_id, adapter_name="lcm")
-            pipe.compel_proc = Compel(
-                tokenizer=pipe.tokenizer,
-                text_encoder=pipe.text_encoder,
-                truncate_long_prompts=False,
-            )
+            pipe.to(device=device, dtype=torch_dtype).to(device)
+            if args.compel:
+                self.compel_proc = Compel(
+                    tokenizer=pipe.tokenizer,
+                    text_encoder=pipe.text_encoder,
+                    truncate_long_prompts=False,
+                )
             if args.torch_compile:
                 pipe.unet = torch.compile(
                     pipe.unet, mode="reduce-overhead", fullgraph=True
@@ -233,7 +231,12 @@ class Pipeline:
 
         activation_token = base_models[params.base_model_id]
         prompt = f"{activation_token} {params.prompt}"
-        prompt_embeds = pipe.compel_proc(prompt)
+        prompt_embeds = None
+        prompt = params.prompt
+        if hasattr(self, "compel_proc"):
+            prompt_embeds = self.compel_proc(prompt)
+            prompt = None
+
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
@@ -245,6 +248,7 @@ class Pipeline:
         results = pipe(
             image=params.image,
             control_image=control_image,
+            prompt=prompt,
             prompt_embeds=prompt_embeds,
             generator=generator,
             strength=strength,

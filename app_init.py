@@ -17,6 +17,8 @@ import asyncio
 import os
 import time
 
+THROTTLE = 1.0 / 120
+
 
 def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
     app.add_middleware(
@@ -61,7 +63,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
             while True:
                 data = await websocket.receive_json()
                 if data["status"] != "next_frame":
-                    asyncio.sleep(1.0 / 24)
+                    asyncio.sleep(THROTTLE)
                     continue
 
                 params = await websocket.receive_json()
@@ -86,7 +88,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                     )
                     await websocket.close()
                     return
-                await asyncio.sleep(1.0 / 24)
+                await asyncio.sleep(THROTTLE)
 
         except Exception as e:
             logging.error(f"Error: {e}")

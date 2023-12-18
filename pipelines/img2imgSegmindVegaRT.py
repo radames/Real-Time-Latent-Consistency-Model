@@ -75,7 +75,7 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         steps: int = Field(
-            4, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
+            1, min=1, max=10, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
             1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
@@ -126,14 +126,22 @@ class Pipeline:
         self.pipe.scheduler = LCMScheduler.from_pretrained(
             base_model, subfolder="scheduler"
         )
+        if args.sfast:
+            from sfast.compilers.stable_diffusion_pipeline_compiler import (
+                compile,
+                CompilationConfig,
+            )
+
+            config = CompilationConfig.Default()
+            config.enable_xformers = True
+            config.enable_triton = True
+            config.enable_cuda_graph = True
+            self.pipe = compile(self.pipe, config=config)
+
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
         if device.type != "mps":
             self.pipe.unet.to(memory_format=torch.channels_last)
-
-        # check if computer has less than 64GB of RAM using sys or os
-        if psutil.virtual_memory().total < 64 * 1024**3:
-            self.pipe.enable_attention_slicing()
 
         if args.torch_compile:
             print("Running torch compile")

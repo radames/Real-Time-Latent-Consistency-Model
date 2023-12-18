@@ -20,7 +20,7 @@
   let videoFrameCallbackId: number;
 
   // ajust the throttle time to your needs
-  const THROTTLE_TIME = 1000 / 15;
+  const THROTTLE = 1000 / 120;
   let selectedDevice: string = '';
   let videoIsReady = false;
 
@@ -41,7 +41,7 @@
   }
   let lastMillis = 0;
   async function onFrameChange(now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
-    if (now - lastMillis < THROTTLE_TIME) {
+    if (now - lastMillis < THROTTLE) {
       videoFrameCallbackId = videoEl.requestVideoFrameCallback(onFrameChange);
       return;
     }
