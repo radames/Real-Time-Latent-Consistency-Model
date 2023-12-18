@@ -13,4 +13,4 @@ if [ -z ${PIPELINE+x} ]; then
     PIPELINE="controlnet"
 fi
 echo -e "\033[1;32m\npipeline: $PIPELINE \033[0m"
-python3 run.py --port 7860 --host 0.0.0.0 --pipeline $PIPELINE
+python3 run.py --port 7860 --host 0.0.0.0 --pipeline $PIPELINE --sfast
