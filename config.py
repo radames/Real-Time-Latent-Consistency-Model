@@ -16,6 +16,7 @@ class Args(NamedTuple):
     pipeline: str
     ssl_certfile: str
     ssl_keyfile: str
+    sfast: bool
     compel: bool = False
     debug: bool = False
 
@@ -101,6 +102,12 @@ parser.add_argument(
     action="store_true",
     default=False,
     help="Compel",
+)
+parser.add_argument(
+    "--sfast",
+    action="store_true",
+    default=False,
+    help="Enable Stable Fast",
 )
 parser.set_defaults(taesd=USE_TAESD)
 

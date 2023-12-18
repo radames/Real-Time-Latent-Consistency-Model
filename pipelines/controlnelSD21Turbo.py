@@ -180,6 +180,19 @@ class Pipeline:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)
+
+        if args.sfast:
+            from sfast.compilers.stable_diffusion_pipeline_compiler import (
+                compile,
+                CompilationConfig,
+            )
+
+            config = CompilationConfig.Default()
+            config.enable_xformers = True
+            config.enable_triton = True
+            config.enable_cuda_graph = True
+            self.pipe = compile(self.pipe, config=config)
+
         self.canny_torch = SobelOperator(device=device)
 
         self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
@@ -188,14 +201,15 @@ class Pipeline:
         if device.type != "mps":
             self.pipe.unet.to(memory_format=torch.channels_last)
 
-        if psutil.virtual_memory().total < 64 * 1024**3:
-            self.pipe.enable_attention_slicing()
+        if args.compel:
+            from compel import Compel
 
-        self.pipe.compel_proc = Compel(
-            tokenizer=self.pipe.tokenizer,
-            text_encoder=self.pipe.text_encoder,
-            truncate_long_prompts=True,
-        )
+            self.pipe.compel_proc = Compel(
+                tokenizer=self.pipe.tokenizer,
+                text_encoder=self.pipe.text_encoder,
+                truncate_long_prompts=True,
+            )
+
         if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
@@ -216,7 +230,13 @@ class Pipeline:
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
-        prompt_embeds = self.pipe.compel_proc(params.prompt)
+        prompt = params.prompt
+        prompt_embeds = None
+        if hasattr(self.pipe, "compel_proc"):
+            prompt_embeds = self.pipe.compel_proc(
+                [params.prompt, params.negative_prompt]
+            )
+            prompt = None
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
@@ -224,10 +244,10 @@ class Pipeline:
         strength = params.strength
         if int(steps * strength) < 1:
             steps = math.ceil(1 / max(0.10, strength))
-        last_time = time.time()
         results = self.pipe(
             image=params.image,
             control_image=control_image,
+            prompt=prompt,
             prompt_embeds=prompt_embeds,
             generator=generator,
             strength=strength,
@@ -240,8 +260,6 @@ class Pipeline:
             control_guidance_start=params.controlnet_start,
             control_guidance_end=params.controlnet_end,
         )
-        print(f"Time taken: {time.time() - last_time}")
-
         nsfw_content_detected = (
             results.nsfw_content_detected[0]
             if "nsfw_content_detected" in results

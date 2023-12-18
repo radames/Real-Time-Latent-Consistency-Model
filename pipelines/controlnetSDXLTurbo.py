@@ -185,20 +185,31 @@ class Pipeline:
             )
         self.canny_torch = SobelOperator(device=device)
 
+        if args.sfast:
+            from sfast.compilers.stable_diffusion_pipeline_compiler import (
+                compile,
+                CompilationConfig,
+            )
+
+            config = CompilationConfig.Default()
+            config.enable_xformers = True
+            config.enable_triton = True
+            config.enable_cuda_graph = True
+            self.pipe = compile(self.pipe, config=config)
+
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype).to(device)
         if device.type != "mps":
             self.pipe.unet.to(memory_format=torch.channels_last)
 
-        if psutil.virtual_memory().total < 64 * 1024**3:
-            self.pipe.enable_attention_slicing()
+        if args.compel:
+            self.pipe.compel_proc = Compel(
+                tokenizer=[self.pipe.tokenizer, self.pipe.tokenizer_2],
+                text_encoder=[self.pipe.text_encoder, self.pipe.text_encoder_2],
+                returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
+                requires_pooled=[False, True],
+            )
 
-        self.pipe.compel_proc = Compel(
-            tokenizer=[self.pipe.tokenizer, self.pipe.tokenizer_2],
-            text_encoder=[self.pipe.text_encoder, self.pipe.text_encoder_2],
-            returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
-            requires_pooled=[False, True],
-        )
         if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
@@ -220,9 +231,23 @@ class Pipeline:
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
 
-        prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
-            [params.prompt, params.negative_prompt]
-        )
+        prompt = params.prompt
+        negative_prompt = params.negative_prompt
+        prompt_embeds = None
+        pooled_prompt_embeds = None
+        negative_prompt_embeds = None
+        negative_pooled_prompt_embeds = None
+        if hasattr(self.pipe, "compel_proc"):
+            _prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
+                [params.prompt, params.negative_prompt]
+            )
+            prompt = None
+            negative_prompt = None
+            prompt_embeds = _prompt_embeds[0:1]
+            pooled_prompt_embeds = pooled_prompt_embeds[0:1]
+            negative_prompt_embeds = _prompt_embeds[1:2]
+            negative_pooled_prompt_embeds = pooled_prompt_embeds[1:2]
+
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
@@ -234,10 +259,12 @@ class Pipeline:
         results = self.pipe(
             image=params.image,
             control_image=control_image,
-            prompt_embeds=prompt_embeds[0:1],
-            pooled_prompt_embeds=pooled_prompt_embeds[0:1],
-            negative_prompt_embeds=prompt_embeds[1:2],
-            negative_pooled_prompt_embeds=pooled_prompt_embeds[1:2],
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            prompt_embeds=prompt_embeds,
+            pooled_prompt_embeds=pooled_prompt_embeds,
+            negative_prompt_embeds=negative_prompt_embeds,
+            negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
             generator=generator,
             strength=strength,
             num_inference_steps=steps,

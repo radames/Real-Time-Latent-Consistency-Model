@@ -110,11 +110,11 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                     params = await user_data.get_latest_data(user_id)
                     if not vars(params) or params.__dict__ == last_params.__dict__:
                         await websocket.send_json({"status": "send_frame"})
-                        await asyncio.sleep(0.1)
                         continue
 
                     last_params = params
                     image = pipeline.predict(params)
+
                     if image is None:
                         await websocket.send_json({"status": "send_frame"})
                         continue

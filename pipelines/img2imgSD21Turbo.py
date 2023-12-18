@@ -14,6 +14,10 @@ from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
 import math
+from sfast.compilers.stable_diffusion_pipeline_compiler import (
+    compile,
+    CompilationConfig,
+)
 
 base_model = "stabilityai/sd-turbo"
 taesd_model = "madebyollin/taesd"
@@ -104,14 +108,22 @@ class Pipeline:
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)
 
+        if args.sfast:
+            from sfast.compilers.stable_diffusion_pipeline_compiler import (
+                compile,
+                CompilationConfig,
+            )
+
+            config = CompilationConfig.Default()
+            config.enable_xformers = True
+            config.enable_triton = True
+            config.enable_cuda_graph = True
+            self.pipe = compile(self.pipe, config=config)
+
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)
         if device.type != "mps":
             self.pipe.unet.to(memory_format=torch.channels_last)
-
-        # check if computer has less than 64GB of RAM using sys or os
-        if psutil.virtual_memory().total < 64 * 1024**3:
-            self.pipe.enable_attention_slicing()
 
         if args.torch_compile:
             print("Running torch compile")
