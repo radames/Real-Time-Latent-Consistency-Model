@@ -45,7 +45,7 @@
     }
     const data = await fetch('/queue_size').then((r) => r.json());
     currentQueueSize = data.queue_size;
-    setTimeout(getQueueSize, 1000);
+    setTimeout(getQueueSize, 10000);
   }
 
   function getSreamdata() {
