@@ -25,7 +25,7 @@ taesd_model = "madebyollin/taesd"
 default_prompt = "close-up photography of old man standing in the rain at night, in a street lit by lamps, leica 35mm summilux"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
 page_content = """
-<h1 class="text-3xl font-bold">Real-Time SDXL Turbo</h1>
+<h1 class="text-3xl font-bold">Real-Time SD-Turbo</h1>
 <h3 class="text-xl font-bold">Image-to-Image</h3>
 <p class="text-sm">
     This demo showcases
