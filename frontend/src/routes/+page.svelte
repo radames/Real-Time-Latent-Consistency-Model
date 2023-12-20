@@ -17,6 +17,8 @@
   let isImageMode: boolean = false;
   let maxQueueSize: number = 0;
   let currentQueueSize: number = 0;
+  let queueCheckerRunning: boolean = false;
+
   onMount(() => {
     getSettings();
   });
@@ -29,16 +31,21 @@
     maxQueueSize = settings.max_queue_size;
     pageContent = settings.page_content;
     console.log(pipelineParams);
-    if (maxQueueSize > 0) {
+    toggleQueueChecker(true);
+  }
+  function toggleQueueChecker(start: boolean) {
+    queueCheckerRunning = start && maxQueueSize > 0;
+    if (start) {
       getQueueSize();
-      setInterval(() => {
-        getQueueSize();
-      }, 2000);
     }
   }
   async function getQueueSize() {
+    if (!queueCheckerRunning) {
+      return;
+    }
     const data = await fetch('/queue_size').then((r) => r.json());
     currentQueueSize = data.queue_size;
+    setTimeout(getQueueSize, 1000);
   }
 
   function getSreamdata() {
@@ -61,11 +68,13 @@
       disabled = true;
       await lcmLiveActions.start(getSreamdata);
       disabled = false;
+      toggleQueueChecker(false);
     } else {
       if (isImageMode) {
         mediaStreamActions.stop();
       }
       lcmLiveActions.stop();
+      toggleQueueChecker(true);
     }
   }
 </script>
