@@ -20,7 +20,7 @@ export const lcmLiveActions = {
 
             try {
                 const websocketURL = `${window.location.protocol === "https:" ? "wss" : "ws"
-                    }:${window.location.host}/ws`;
+                    }:${window.location.host}/api/ws`;
 
                 websocket = new WebSocket(websocketURL);
                 websocket.onopen = () => {

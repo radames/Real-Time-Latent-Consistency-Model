@@ -24,11 +24,11 @@
   });
 
   async function getSettings() {
-    const settings = await fetch('/settings').then((r) => r.json());
+    const settings = await fetch('/api/settings').then((r) => r.json());
     pipelineParams = settings.input_params.properties;
     pipelineInfo = settings.info.properties;
     isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
-    maxQueueSize = settings.max_queue_size;
+    maxQueueSize = 2; //settings.max_queue_size;
     pageContent = settings.page_content;
     console.log(pipelineParams);
     toggleQueueChecker(true);
@@ -43,7 +43,7 @@
     if (!queueCheckerRunning) {
       return;
     }
-    const data = await fetch('/queue_size').then((r) => r.json());
+    const data = await fetch('/api/queue').then((r) => r.json());
     currentQueueSize = data.queue_size;
     setTimeout(getQueueSize, 10000);
   }

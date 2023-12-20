@@ -29,7 +29,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
         allow_headers=["*"],
     )
 
-    @app.websocket("/ws")
+    @app.websocket("/api/ws")
     async def websocket_endpoint(websocket: WebSocket):
         await websocket.accept()
         user_count = user_data.get_user_count()
@@ -94,12 +94,12 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
             logging.error(f"Error: {e}")
             traceback.print_exc()
 
-    @app.get("/queue_size")
+    @app.get("/api/queue")
     async def get_queue_size():
         queue_size = user_data.get_user_count()
         return JSONResponse({"queue_size": queue_size})
 
-    @app.get("/stream/{user_id}")
+    @app.get("/api/stream/{user_id}")
     async def stream(user_id: uuid.UUID, request: Request):
         try:
             print(f"New stream request: {user_id}")
@@ -140,7 +140,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
             return HTTPException(status_code=404, detail="User not found")
 
     # route to setup frontend
-    @app.get("/settings")
+    @app.get("/api/settings")
     async def settings():
         info_schema = pipeline.Info.schema()
         info = pipeline.Info()

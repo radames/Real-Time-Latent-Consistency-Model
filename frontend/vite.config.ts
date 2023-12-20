@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [sveltekit()],
   server: {
     proxy: {
-      '^/settings|/queue_size|/stream': 'http://localhost:7860',
-      '/ws': {
+      '/api': 'http://localhost:7860',
+      '/api/ws': {
         target: 'ws://localhost:7860',
         ws: true
       }

@@ -26,7 +26,11 @@
 >
   <!-- svelte-ignore a11y-missing-attribute -->
   {#if isLCMRunning}
-    <img bind:this={imageEl} class="aspect-square w-full rounded-lg" src={'/stream/' + $streamId} />
+    <img
+      bind:this={imageEl}
+      class="aspect-square w-full rounded-lg"
+      src={'/api/stream/' + $streamId}
+    />
     <div class="absolute bottom-1 right-1">
       <Button
         on:click={takeSnapshot}
