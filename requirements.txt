@@ -1,7 +1,7 @@
-git+https://github.com/huggingface/diffusers@2d94c7838e273c40920ffd6d24d724357add7f2d
+diffusers==0.24.0
 transformers==4.35.2
 --extra-index-url https://download.pytorch.org/whl/cu121;
-torch==2.1.0
+torch
 fastapi==0.104.1
 uvicorn[standard]==0.24.0.post1
 Pillow==10.1.0
@@ -12,3 +12,5 @@ peft==0.6.0
 xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
 markdown2
 stable_fast @ https://github.com/chengzeyi/stable-fast/releases/download/v0.0.15.post1/stable_fast-0.0.15.post1+torch211cu121-cp310-cp310-manylinux2014_x86_64.whl
+oneflow @ https://oneflow-pro.oss-cn-beijing.aliyuncs.com/branch/community/cu121/794a56cc787217f46b21f5cbc84f65295664b82c/oneflow-0.9.1%2Bcu121.git.794a56c-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+git+https://github.com/Oneflow-Inc/onediff.git@main#egg=onediff

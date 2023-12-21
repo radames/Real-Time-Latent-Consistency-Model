@@ -109,6 +109,7 @@ class Pipeline:
             ).to(device)
 
         if args.sfast:
+            print("\nRunning sfast compile\n")
             from sfast.compilers.stable_diffusion_pipeline_compiler import (
                 compile,
                 CompilationConfig,
@@ -119,6 +120,14 @@ class Pipeline:
             config.enable_triton = True
             config.enable_cuda_graph = True
             self.pipe = compile(self.pipe, config=config)
+
+        if args.oneflow:
+            print("\nRunning oneflow compile\n")
+            from onediff.infer_compiler import oneflow_compile
+
+            self.pipe.unet = oneflow_compile(self.pipe.unet)
+            self.pipe.vae.encoder = oneflow_compile(self.pipe.vae.encoder)
+            self.pipe.vae.decoder = oneflow_compile(self.pipe.vae.decoder)
 
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype)

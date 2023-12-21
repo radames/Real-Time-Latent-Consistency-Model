@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     google-perftools \
     ca-certificates curl gnupg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-    
+
 WORKDIR /code
 
 RUN mkdir -p /etc/apt/keyrings 
@@ -36,7 +36,7 @@ ENV HOME=/home/user \
     PYTHONUNBUFFERED=1 \
     SYSTEM=spaces
 
-RUN pip3 install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN pip3 install --no-cache-dir --upgrade --pre -r /code/requirements.txt
 
 # Set the working directory to the user's home directory
 WORKDIR $HOME/app

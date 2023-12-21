@@ -17,8 +17,15 @@ class Args(NamedTuple):
     ssl_certfile: str
     ssl_keyfile: str
     sfast: bool
+    oneflow: bool = False
     compel: bool = False
     debug: bool = False
+
+    def pretty_print(self):
+        print("\n")
+        for field, value in self._asdict().items():
+            print(f"{field}: {value}")
+        print("\n")
 
 
 MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
@@ -108,6 +115,12 @@ parser.add_argument(
     action="store_true",
     default=False,
     help="Enable Stable Fast",
+)
+parser.add_argument(
+    "--oneflow",
+    action="store_true",
+    default=False,
+    help="Enable OneFlow",
 )
 parser.set_defaults(taesd=USE_TAESD)
 
