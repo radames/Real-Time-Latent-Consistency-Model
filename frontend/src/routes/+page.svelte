@@ -28,7 +28,7 @@
     pipelineParams = settings.input_params.properties;
     pipelineInfo = settings.info.properties;
     isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
-    maxQueueSize = 2; //settings.max_queue_size;
+    maxQueueSize = settings.max_queue_size;
     pageContent = settings.page_content;
     console.log(pipelineParams);
     toggleQueueChecker(true);
