@@ -41,7 +41,6 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
         try:
             user_id = uuid.uuid4()
             print(f"New user connected: {user_id}")
-
             await user_data.create_user(user_id, websocket)
             await websocket.send_json(
                 {"status": "connected", "message": "Connected", "userId": str(user_id)}
@@ -61,6 +60,16 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
         last_time = time.time()
         try:
             while True:
+                if args.timeout > 0 and time.time() - last_time > args.timeout:
+                    await websocket.send_json(
+                        {
+                            "status": "timeout",
+                            "message": "Your session has ended",
+                            "userId": str(user_id),
+                        }
+                    )
+                    await websocket.close()
+                    return
                 data = await websocket.receive_json()
                 if data["status"] != "next_frame":
                     asyncio.sleep(THROTTLE)
@@ -74,21 +83,11 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                     image_data = await websocket.receive_bytes()
                     if len(image_data) == 0:
                         await websocket.send_json({"status": "send_frame"})
+                        await asyncio.sleep(THROTTLE)
                         continue
                     params.image = bytes_to_pil(image_data)
                 await user_data.update_data(user_id, params)
                 await websocket.send_json({"status": "wait"})
-                if args.timeout > 0 and time.time() - last_time > args.timeout:
-                    await websocket.send_json(
-                        {
-                            "status": "timeout",
-                            "message": "Your session has ended",
-                            "userId": user_id,
-                        }
-                    )
-                    await websocket.close()
-                    return
-                await asyncio.sleep(THROTTLE)
 
         except Exception as e:
             logging.error(f"Error: {e}")
@@ -102,7 +101,6 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
     @app.get("/api/stream/{user_id}")
     async def stream(user_id: uuid.UUID, request: Request):
         try:
-            print(f"New stream request: {user_id}")
 
             async def generate():
                 websocket = user_data.get_websocket(user_id)
@@ -112,6 +110,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                     params = await user_data.get_latest_data(user_id)
                     if not vars(params) or params.__dict__ == last_params.__dict__:
                         await websocket.send_json({"status": "send_frame"})
+                        await asyncio.sleep(THROTTLE)
                         continue
 
                     last_params = params
@@ -119,6 +118,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
 
                     if image is None:
                         await websocket.send_json({"status": "send_frame"})
+                        await asyncio.sleep(THROTTLE)
                         continue
                     frame = pil_to_frame(image)
                     yield frame

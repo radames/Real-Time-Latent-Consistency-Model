@@ -7,6 +7,7 @@
   import Button from '$lib/components/Button.svelte';
   import PipelineOptions from '$lib/components/PipelineOptions.svelte';
   import Spinner from '$lib/icons/spinner.svelte';
+  import Warning from '$lib/components/Warning.svelte';
   import { lcmLiveStatus, lcmLiveActions, LCMLiveStatus } from '$lib/lcmLive';
   import { mediaStreamActions, onFrameChangeStore } from '$lib/mediaStream';
   import { getPipelineValues, deboucedPipelineValues } from '$lib/store';
@@ -18,6 +19,7 @@
   let maxQueueSize: number = 0;
   let currentQueueSize: number = 0;
   let queueCheckerRunning: boolean = false;
+  let warningMessage: string = '';
 
   onMount(() => {
     getSettings();
@@ -60,20 +62,27 @@
 
   let disabled = false;
   async function toggleLcmLive() {
-    if (!isLCMRunning) {
-      if (isImageMode) {
-        await mediaStreamActions.enumerateDevices();
-        await mediaStreamActions.start();
+    try {
+      if (!isLCMRunning) {
+        if (isImageMode) {
+          await mediaStreamActions.enumerateDevices();
+          await mediaStreamActions.start();
+        }
+        disabled = true;
+        await lcmLiveActions.start(getSreamdata);
+        warningMessage = 'Timeout, please try again.';
+        disabled = false;
+        toggleQueueChecker(false);
+      } else {
+        if (isImageMode) {
+          mediaStreamActions.stop();
+        }
+        lcmLiveActions.stop();
+        toggleQueueChecker(true);
       }
-      disabled = true;
-      await lcmLiveActions.start(getSreamdata);
+    } catch (e) {
+      warningMessage = e instanceof Error ? e.message : '';
       disabled = false;
-      toggleQueueChecker(false);
-    } else {
-      if (isImageMode) {
-        mediaStreamActions.stop();
-      }
-      lcmLiveActions.stop();
       toggleQueueChecker(true);
     }
   }
@@ -86,6 +95,7 @@
 </svelte:head>
 
 <main class="container mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4">
+  <Warning bind:message={warningMessage}></Warning>
   <article class="text-center">
     {#if pageContent}
       {@html pageContent}
