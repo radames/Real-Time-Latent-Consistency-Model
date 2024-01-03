@@ -20,7 +20,6 @@
   let currentQueueSize: number = 0;
   let queueCheckerRunning: boolean = false;
   let warningMessage: string = '';
-
   onMount(() => {
     getSettings();
   });
@@ -59,7 +58,9 @@
   }
 
   $: isLCMRunning = $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED;
-
+  $: if ($lcmLiveStatus === LCMLiveStatus.TIMEOUT) {
+    warningMessage = 'Session timed out. Please try again.';
+  }
   let disabled = false;
   async function toggleLcmLive() {
     try {
@@ -70,7 +71,6 @@
         }
         disabled = true;
         await lcmLiveActions.start(getSreamdata);
-        warningMessage = 'Timeout, please try again.';
         disabled = false;
         toggleQueueChecker(false);
       } else {

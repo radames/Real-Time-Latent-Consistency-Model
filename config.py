@@ -124,4 +124,5 @@ parser.add_argument(
 )
 parser.set_defaults(taesd=USE_TAESD)
 
-args = Args(**vars(parser.parse_args()))
+config = Args(**vars(parser.parse_args()))
+config.pretty_print()

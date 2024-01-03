@@ -6,6 +6,7 @@ export enum LCMLiveStatus {
     DISCONNECTED = "disconnected",
     WAIT = "wait",
     SEND_FRAME = "send_frame",
+    TIMEOUT = "timeout",
 }
 
 const initStatus: LCMLiveStatus = LCMLiveStatus.DISCONNECTED;
@@ -19,8 +20,9 @@ export const lcmLiveActions = {
         return new Promise((resolve, reject) => {
 
             try {
+                const userId = crypto.randomUUID();
                 const websocketURL = `${window.location.protocol === "https:" ? "wss" : "ws"
-                    }:${window.location.host}/api/ws`;
+                    }:${window.location.host}/api/ws/${userId}`;
 
                 websocket = new WebSocket(websocketURL);
                 websocket.onopen = () => {
@@ -37,9 +39,9 @@ export const lcmLiveActions = {
                     const data = JSON.parse(event.data);
                     switch (data.status) {
                         case "connected":
-                            const userId = data.userId;
                             lcmLiveStatus.set(LCMLiveStatus.CONNECTED);
                             streamId.set(userId);
+                            resolve({ status: "connected", userId });
                             break;
                         case "send_frame":
                             lcmLiveStatus.set(LCMLiveStatus.SEND_FRAME);
@@ -54,14 +56,16 @@ export const lcmLiveActions = {
                             break;
                         case "timeout":
                             console.log("timeout");
-                            lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
+                            lcmLiveStatus.set(LCMLiveStatus.TIMEOUT);
                             streamId.set(null);
-                            resolve({ status: "timeout" });
+                            reject(new Error("timeout"));
+                            break;
                         case "error":
                             console.log(data.message);
                             lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
                             streamId.set(null);
                             reject(new Error(data.message));
+                            break;
                     }
                 };
 
@@ -85,12 +89,11 @@ export const lcmLiveActions = {
         }
     },
     async stop() {
-
+        lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
         if (websocket) {
             websocket.close();
         }
         websocket = null;
-        lcmLiveStatus.set(LCMLiveStatus.DISCONNECTED);
         streamId.set(null);
     },
 };
