@@ -17,4 +17,4 @@ if [ -z ${COMPILE+x} ]; then
 fi
 echo -e "\033[1;32m\npipeline: $PIPELINE \033[0m"
 echo -e "\033[1;32m\ncompile: $COMPILE \033[0m"
-python3 run.py --port 7860 --host 0.0.0.0 --pipeline $PIPELINE $COMPILE
+python3 main.py --port 7860 --host 0.0.0.0 --pipeline $PIPELINE $COMPILE
