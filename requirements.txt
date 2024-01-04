@@ -13,4 +13,4 @@ xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
 markdown2
 stable_fast @ https://github.com/chengzeyi/stable-fast/releases/download/v0.0.15.post1/stable_fast-0.0.15.post1+torch211cu121-cp310-cp310-manylinux2014_x86_64.whl
 oneflow @ https://oneflow-pro.oss-cn-beijing.aliyuncs.com/branch/community/cu121/794a56cc787217f46b21f5cbc84f65295664b82c/oneflow-0.9.1%2Bcu121.git.794a56c-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-git+https://github.com/Oneflow-Inc/onediff.git@main#egg=onediff
+git+https://github.com/siliconflow/onediff.git@main#egg=onediff

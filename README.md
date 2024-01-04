@@ -134,7 +134,7 @@ python server/main.py --reload --pipeline txt2imgLoraSDXL
 * `--debug`: Print Inference time  
 * `--compel`: Compel option  
 * `--sfast`: Enable Stable Fast   
-* `--oneflow`: Enable OneFlow    
+* `--onediff`: Enable OneDiff
 
 If you run using `bash build-run.sh` you can set `PIPELINE` variables to choose the pipeline you want to run
 

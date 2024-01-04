@@ -16,7 +16,7 @@ class Args(NamedTuple):
     ssl_certfile: str
     ssl_keyfile: str
     sfast: bool
-    oneflow: bool = False
+    onediff: bool = False
     compel: bool = False
     debug: bool = False
 
@@ -112,10 +112,10 @@ parser.add_argument(
     help="Enable Stable Fast",
 )
 parser.add_argument(
-    "--oneflow",
+    "--onediff",
     action="store_true",
     default=False,
-    help="Enable OneFlow",
+    help="Enable OneDiff",
 )
 parser.set_defaults(taesd=USE_TAESD)
 
