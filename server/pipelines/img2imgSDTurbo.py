@@ -121,8 +121,8 @@ class Pipeline:
             config.enable_cuda_graph = True
             self.pipe = compile(self.pipe, config=config)
 
-        if args.oneflow:
-            print("\nRunning oneflow compile\n")
+        if args.onediff:
+            print("\nRunning onediff compile\n")
             from onediff.infer_compiler import oneflow_compile
 
             self.pipe.unet = oneflow_compile(self.pipe.unet)
