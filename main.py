@@ -7,7 +7,7 @@ import markdown2
 
 import logging
 from config import config, Args
-from connection_manager import ConnectionManager
+from connection_manager import ConnectionManager, ServerFullException
 import uuid
 import time
 from types import SimpleNamespace
@@ -72,25 +72,22 @@ class App:
                         await self.conn_manager.disconnect(user_id)
                         return
                     data = await self.conn_manager.receive_json(user_id)
-                    if data["status"] != "next_frame":
-                        asyncio.sleep(THROTTLE)
-                        continue
+                    if data["status"] == "next_frame":
+                        info = pipeline.Info()
+                        params = await self.conn_manager.receive_json(user_id)
+                        params = pipeline.InputParams(**params)
+                        params = SimpleNamespace(**params.dict())
+                        if info.input_mode == "image":
+                            image_data = await self.conn_manager.receive_bytes(user_id)
+                            if len(image_data) == 0:
+                                await self.conn_manager.send_json(
+                                    user_id, {"status": "send_frame"}
+                                )
+                                continue
+                            params.image = bytes_to_pil(image_data)
 
-                    params = await self.conn_manager.receive_json(user_id)
-                    params = pipeline.InputParams(**params)
-                    info = pipeline.Info()
-                    params = SimpleNamespace(**params.dict())
-                    if info.input_mode == "image":
-                        image_data = await self.conn_manager.receive_bytes(user_id)
-                        if len(image_data) == 0:
-                            await self.conn_manager.send_json(
-                                user_id, {"status": "send_frame"}
-                            )
-                            await asyncio.sleep(THROTTLE)
-                            continue
-                        params.image = bytes_to_pil(image_data)
-                    await self.conn_manager.update_data(user_id, params)
-                    await self.conn_manager.send_json(user_id, {"status": "wait"})
+                        await self.conn_manager.update_data(user_id, params)
+                        await self.conn_manager.send_json(user_id, {"status": "wait"})
 
             except Exception as e:
                 logging.error(f"Websocket Error: {e}, {user_id} ")
@@ -109,28 +106,22 @@ class App:
                     last_params = SimpleNamespace()
                     while True:
                         last_time = time.time()
+                        await self.conn_manager.send_json(
+                            user_id, {"status": "send_frame"}
+                        )
                         params = await self.conn_manager.get_latest_data(user_id)
-                        if not vars(params) or params.__dict__ == last_params.__dict__:
-                            await self.conn_manager.send_json(
-                                user_id, {"status": "send_frame"}
-                            )
+                        if params.__dict__ == last_params.__dict__ or params is None:
+                            await asyncio.sleep(THROTTLE)
                             continue
-
                         last_params = params
                         image = pipeline.predict(params)
                         if image is None:
-                            await self.conn_manager.send_json(
-                                user_id, {"status": "send_frame"}
-                            )
                             continue
                         frame = pil_to_frame(image)
                         yield frame
                         # https://bugs.chromium.org/p/chromium/issues/detail?id=1250396
                         if not is_firefox(request.headers["user-agent"]):
                             yield frame
-                        await self.conn_manager.send_json(
-                            user_id, {"status": "send_frame"}
-                        )
                         if self.args.debug:
                             print(f"Time taken: {time.time() - last_time}")
 

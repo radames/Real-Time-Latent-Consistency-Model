@@ -7,10 +7,10 @@ try:
 except:
     pass
 
-import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
+from typing import List
 
 base_model = "SimianLuo/LCM_Dreamshaper_v7"
 taesd_model = "madebyollin/taesd"
