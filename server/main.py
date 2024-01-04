@@ -155,7 +155,9 @@ class App:
         if not os.path.exists("public"):
             os.makedirs("public")
 
-        self.app.mount("/", StaticFiles(directory="public", html=True), name="public")
+        self.app.mount(
+            "/", StaticFiles(directory="frontend/public", html=True), name="public"
+        )
 
 
 pipeline_class = get_pipeline_class(config.pipeline)
