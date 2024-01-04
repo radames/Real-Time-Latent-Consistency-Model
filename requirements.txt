@@ -1,16 +1,16 @@
 diffusers==0.24.0
-transformers==4.35.2
+transformers==4.36.2
 --extra-index-url https://download.pytorch.org/whl/cu121;
 torch
-fastapi==0.104.1
-uvicorn[standard]==0.24.0.post1
-Pillow==10.1.0
-accelerate==0.24.0
+fastapi==0.108.0
+uvicorn[standard]==0.25.0
+Pillow==10.2.0
+accelerate==0.25.0
 compel==2.0.2
 controlnet-aux==0.0.7
 peft==0.6.0
 xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
 markdown2
-stable_fast @ https://github.com/chengzeyi/stable-fast/releases/download/v0.0.15.post1/stable_fast-0.0.15.post1+torch211cu121-cp310-cp310-manylinux2014_x86_64.whl
-oneflow @ https://oneflow-pro.oss-cn-beijing.aliyuncs.com/branch/community/cu121/794a56cc787217f46b21f5cbc84f65295664b82c/oneflow-0.9.1%2Bcu121.git.794a56c-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+stable_fast @ https://github.com/chengzeyi/stable-fast/releases/download/v1.0.1/stable_fast-1.0.1+torch211cu121-cp310-cp310-manylinux2014_x86_64.whl
+oneflow @ https://oneflow-pro.oss-cn-beijing.aliyuncs.com/branch/community/cu121/a0df8f27528ab5d55211b05e809c6ce3e1070f29/oneflow-0.9.1.dev20240104%2Bcu121-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 git+https://github.com/siliconflow/onediff.git@main#egg=onediff
