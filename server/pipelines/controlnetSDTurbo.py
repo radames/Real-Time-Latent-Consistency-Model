@@ -26,6 +26,9 @@ controlnet_model = "thibaud/controlnet-sd21-canny-diffusers"
 base_model = "stabilityai/sd-turbo"
 
 default_prompt = "Portrait of The Joker halloween costume, face painting, with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
+default_negative_prompt = (
+    "3d render, cartoon, drawing, art, low light, blur, pixelated, low resolution"
+)
 page_content = """
 <h1 class="text-3xl font-bold">Real-Time SDv2.1 Turbo</h1>
 <h3 class="text-xl font-bold">Image-to-Image ControlNet</h3>
@@ -67,6 +70,13 @@ class Pipeline:
             field="textarea",
             id="prompt",
         )
+        negative_prompt: str = Field(
+            default_negative_prompt,
+            title="Negative Prompt",
+            field="textarea",
+            id="negative_prompt",
+            hide=True,
+        )
         seed: int = Field(
             4402026899276587, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
@@ -78,6 +88,16 @@ class Pipeline:
         )
         height: int = Field(
             512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+        )
+        lora_strength: float = Field(
+            1.0,
+            min=0.0,
+            max=3.0,
+            step=0.001,
+            title="LoRA Strength",
+            field="range",
+            hide=True,
+            id="lora_strength",
         )
         guidance_scale: float = Field(
             1.21,
@@ -181,6 +201,10 @@ class Pipeline:
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)
 
+        self.pipe.load_lora_weights(
+            "radames/stable-diffusion-2-1-DPO-LoRA", adapter_name="dpo-lora-sd21"
+        )
+
         if args.sfast:
             print("\nRunning sfast compile\n")
             from sfast.compilers.stable_diffusion_pipeline_compiler import (
@@ -241,28 +265,35 @@ class Pipeline:
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
         prompt = params.prompt
+        negative_prompt = params.negative_prompt
         prompt_embeds = None
         if hasattr(self.pipe, "compel_proc"):
             prompt_embeds = self.pipe.compel_proc(
                 [params.prompt, params.negative_prompt]
             )
             prompt = None
+            negative_prompt = None
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
+        )
+        self.pipe.set_adapters(
+            ["dpo-lora-sd21"], adapter_weights=[params.lora_strength]
         )
         steps = params.steps
         strength = params.strength
         if int(steps * strength) < 1:
             steps = math.ceil(1 / max(0.10, strength))
+        guidance_scale = max(0.01, params.guidance_scale)
         results = self.pipe(
             image=params.image,
             control_image=control_image,
             prompt=prompt,
+            negative_prompt=negative_prompt,
             prompt_embeds=prompt_embeds,
             generator=generator,
             strength=strength,
             num_inference_steps=steps,
-            guidance_scale=params.guidance_scale,
+            guidance_scale=guidance_scale,
             width=params.width,
             height=params.height,
             output_type="pil",

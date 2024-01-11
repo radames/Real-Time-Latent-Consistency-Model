@@ -23,7 +23,9 @@ base_model = "stabilityai/sd-turbo"
 taesd_model = "madebyollin/taesd"
 
 default_prompt = "close-up photography of old man standing in the rain at night, in a street lit by lamps, leica 35mm summilux"
-default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
+default_negative_prompt = (
+    "3d render, cartoon, drawing, art, low light, blur, pixelated, low resolution"
+)
 page_content = """
 <h1 class="text-3xl font-bold">Real-Time SD-Turbo</h1>
 <h3 class="text-xl font-bold">Image-to-Image</h3>
@@ -84,6 +86,26 @@ class Pipeline:
         height: int = Field(
             512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
+        lora_strength: float = Field(
+            1.0,
+            min=0.0,
+            max=3.0,
+            step=0.001,
+            title="LoRA Strength",
+            field="range",
+            hide=True,
+            id="lora_strength",
+        )
+        guidance_scale: float = Field(
+            1.21,
+            min=0,
+            max=10,
+            step=0.001,
+            title="Guidance Scale",
+            field="range",
+            hide=True,
+            id="guidance_scale",
+        )
         strength: float = Field(
             0.5,
             min=0.25,
@@ -108,6 +130,9 @@ class Pipeline:
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)
 
+        self.pipe.load_lora_weights(
+            "radames/stable-diffusion-2-1-DPO-LoRA", adapter_name="dpo-lora-sd21"
+        )
         if args.sfast:
             print("\nRunning sfast compile\n")
             from sfast.compilers.stable_diffusion_pipeline_compiler import (
@@ -171,6 +196,11 @@ class Pipeline:
             )
             prompt = None
 
+        guidance_scale = max(0.01, params.guidance_scale)
+        self.pipe.set_adapters(
+            ["dpo-lora-sd21"], adapter_weights=[params.lora_strength]
+        )
+        print(params.lora_strength)
         results = self.pipe(
             image=params.image,
             prompt_embeds=prompt_embeds,
@@ -179,7 +209,7 @@ class Pipeline:
             generator=generator,
             strength=strength,
             num_inference_steps=steps,
-            guidance_scale=1.1,
+            guidance_scale=guidance_scale,
             width=params.width,
             height=params.height,
             output_type="pil",
