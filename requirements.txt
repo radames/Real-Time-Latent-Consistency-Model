@@ -1,4 +1,4 @@
-diffusers==0.24.0
+git+https://github.com/huggingface/diffusers
 transformers==4.36.2
 --extra-index-url https://download.pytorch.org/whl/cu121;
 torch
