@@ -36,3 +36,46 @@ export function snapImage(imageEl: HTMLImageElement, info: IImageInfo) {
         console.log(err);
     }
 }
+
+export function expandWindow(steramURL: string): Window {
+    const html = `
+    <html>
+        <head>
+            <title>Real-Time Latent Consistency Model</title>
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background-color: black;
+                }
+            </style>
+        </head>
+        <body>
+            <script>
+                let isFullscreen = false;
+                window.onkeydown = function(event) {
+                    switch (event.code) {
+                        case "Escape":
+                            window.close();
+                            break;
+                        case "Enter":
+                            if (isFullscreen) {
+                                document.exitFullscreen();
+                                isFullscreen = false;
+                            } else {
+                                document.documentElement.requestFullscreen();
+                                isFullscreen = true;
+                            }
+                            break;
+                    }
+                }
+            </script>
+
+            <img src="${steramURL}" style="width: 100%; height: 100%; object-fit: contain;" />
+        </body>
+    </html>
+    `;
+    const newWindow = window.open("", "_blank", "width=1024,height=1024,scrollbars=0,resizable=1,toolbar=0,menubar=0,location=0,directories=0,status=0") as Window;
+    newWindow.document.write(html);
+    return newWindow;
+}

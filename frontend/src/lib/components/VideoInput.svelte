@@ -10,6 +10,7 @@
     mediaDevices
   } from '$lib/mediaStream';
   import MediaListSwitcher from './MediaListSwitcher.svelte';
+
   export let width = 512;
   export let height = 512;
   const size = { width, height };
@@ -32,6 +33,7 @@
   $: {
     console.log(selectedDevice);
   }
+
   onDestroy(() => {
     if (videoFrameCallbackId) videoEl.cancelVideoFrameCallback(videoFrameCallbackId);
   });
@@ -47,18 +49,15 @@
     }
     const videoWidth = videoEl.videoWidth;
     const videoHeight = videoEl.videoHeight;
-    let height0 = videoHeight;
-    let width0 = videoWidth;
-    let x0 = 0;
-    let y0 = 0;
-    if (videoWidth > videoHeight) {
-      width0 = videoHeight;
-      x0 = (videoWidth - videoHeight) / 2;
-    } else {
-      height0 = videoWidth;
-      y0 = (videoHeight - videoWidth) / 2;
-    }
-    ctx.drawImage(videoEl, x0, y0, width0, height0, 0, 0, size.width, size.height);
+    // scale down video to fit canvas,  size.width, size.height
+    const scale = Math.min(size.width / videoWidth, size.height / videoHeight);
+    const width0 = videoWidth * scale;
+    const height0 = videoHeight * scale;
+    const x0 = (size.width - width0) / 2;
+    const y0 = (size.height - height0) / 2;
+    ctx.clearRect(0, 0, size.width, size.height);
+    ctx.drawImage(videoEl, x0, y0, width0, height0);
+
     const blob = await new Promise<Blob>((resolve) => {
       canvasEl.toBlob(
         (blob) => {
@@ -78,14 +77,14 @@
 </script>
 
 <div class="relative mx-auto max-w-lg overflow-hidden rounded-lg border border-slate-300">
-  <div class="relative z-10 aspect-square w-full object-cover">
+  <div class="relative z-10 flex aspect-square w-full items-center justify-center object-cover">
     {#if $mediaDevices.length > 0}
-      <div class="absolute bottom-0 right-0 z-10">
+      <div class="absolute bottom-0 right-0 z-10 w-full bg-slate-400 bg-opacity-40">
         <MediaListSwitcher />
       </div>
     {/if}
     <video
-      class="pointer-events-none aspect-square w-full object-cover"
+      class="pointer-events-none aspect-square w-full justify-center object-contain"
       bind:this={videoEl}
       on:loadeddata={() => {
         videoIsReady = true;
