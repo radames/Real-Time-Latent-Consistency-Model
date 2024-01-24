@@ -11,6 +11,6 @@ controlnet-aux==0.0.7
 peft==0.6.0
 xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
 markdown2
-stable_fast @ https://github.com/chengzeyi/stable-fast/releases/download/v1.0.1/stable_fast-1.0.1+torch211cu121-cp310-cp310-manylinux2014_x86_64.whl
+stable_fast @ https://github.com/chengzeyi/stable-fast/releases/download/v1.0.2/stable_fast-1.0.2+torch211cu121-cp310-cp310-manylinux2014_x86_64.whl
 oneflow @ https://oneflow-pro.oss-cn-beijing.aliyuncs.com/branch/community/cu121/a0df8f27528ab5d55211b05e809c6ce3e1070f29/oneflow-0.9.1.dev20240104%2Bcu121-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 git+https://github.com/siliconflow/onediff.git@main#egg=onediff
