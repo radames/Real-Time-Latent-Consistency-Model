@@ -160,6 +160,8 @@ class App:
         )
 
 
+print(f"Device: {device}")
+print(f"torch_dtype: {torch_dtype}")
 pipeline_class = get_pipeline_class(config.pipeline)
 pipeline = pipeline_class(config, device, torch_dtype)
 app = App(config, pipeline).app

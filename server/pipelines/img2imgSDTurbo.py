@@ -14,10 +14,7 @@ from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
 import math
-from sfast.compilers.stable_diffusion_pipeline_compiler import (
-    compile,
-    CompilationConfig,
-)
+
 
 base_model = "stabilityai/sd-turbo"
 taesd_model = "madebyollin/taesd"
@@ -109,6 +106,11 @@ class Pipeline:
             ).to(device)
 
         if args.sfast:
+            from sfast.compilers.stable_diffusion_pipeline_compiler import (
+                compile,
+                CompilationConfig,
+            )
+
             print("\nRunning sfast compile\n")
             from sfast.compilers.stable_diffusion_pipeline_compiler import (
                 compile,
