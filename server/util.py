@@ -25,7 +25,7 @@ def bytes_to_pil(image_bytes: bytes) -> Image.Image:
 
 def pil_to_frame(image: Image.Image) -> bytes:
     frame_data = io.BytesIO()
-    image.save(frame_data, format="JPEG")
+    image.save(frame_data, format="JPEG", quality=80, optimize=True, progressive=True)
     frame_data = frame_data.getvalue()
     return (
         b"--frame\r\n"
