@@ -83,10 +83,10 @@ class Pipeline:
             1, min=1, max=10, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            1024, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             1.0,
@@ -196,7 +196,8 @@ class Pipeline:
         )
         self.pipe.set_adapters(["lcm", "toy"], adapter_weights=[1.0, 0.8])
 
-        self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
+        self.pipe.scheduler = LCMScheduler.from_config(
+            self.pipe.scheduler.config)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype).to(device)
 
@@ -218,7 +219,8 @@ class Pipeline:
         if args.compel:
             self.pipe.compel_proc = Compel(
                 tokenizer=[self.pipe.tokenizer, self.pipe.tokenizer_2],
-                text_encoder=[self.pipe.text_encoder, self.pipe.text_encoder_2],
+                text_encoder=[self.pipe.text_encoder,
+                              self.pipe.text_encoder_2],
                 returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
                 requires_pooled=[False, True],
             )
