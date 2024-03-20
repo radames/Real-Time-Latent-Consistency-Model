@@ -153,6 +153,7 @@ class Pix2Pix_Turbo(torch.nn.Module):
         self.caption_enc = None
         self.device = "cuda"
 
+    @torch.no_grad()
     def forward(self, c_t, prompt, deterministic=True, r=1.0, noise_map=1.0):
         # encode the text prompt
         if prompt != self.last_prompt:

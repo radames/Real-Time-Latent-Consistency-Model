@@ -5,7 +5,7 @@ from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
 from pipelines.pix2pix.pix2pix_turbo import Pix2Pix_Turbo
-from pipelines.utils.canny_gpu import SobelOperator
+from pipelines.utils.canny_gpu import ScharrOperator
 
 default_prompt = "close-up photo of the joker"
 page_content = """
@@ -17,6 +17,11 @@ page_content = """
     href="https://github.com/GaParmar/img2img-turbo"
     target="_blank"
     class="text-blue-500 underline hover:no-underline">One-Step Image Translation with Text-to-Image Models
+    </a>
+</p>
+<p class="text-sm text-gray-500">
+    Web app <a href="https://github.com/radames/Real-Time-Latent-Consistency-Model" target="_blank" class="text-blue-500 underline hover:no-underline">
+    Real-Time Latent Consistency Models
     </a>
 </p>
 """
@@ -62,7 +67,7 @@ class Pipeline:
             id="deterministic",
         )
         canny_low_threshold: float = Field(
-            0.31,
+            0.0,
             min=0,
             max=1.0,
             step=0.001,
@@ -72,7 +77,7 @@ class Pipeline:
             id="canny_low_threshold",
         )
         canny_high_threshold: float = Field(
-            0.125,
+            1.0,
             min=0,
             max=1.0,
             step=0.001,
@@ -91,30 +96,25 @@ class Pipeline:
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
         self.model = Pix2Pix_Turbo("edge_to_image")
-        self.canny_torch = SobelOperator(device=device)
+        self.canny_torch = ScharrOperator(device=device)
         self.device = device
         self.last_time = 0.0
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
-        # generator = torch.manual_seed(params.seed)
-        # pipe = self.pipes[params.base_model_id]
-
         canny_pil, canny_tensor = self.canny_torch(
             params.image,
             params.canny_low_threshold,
             params.canny_high_threshold,
             output_type="pil,tensor",
         )
-
-        with torch.no_grad():
-            canny_tensor = torch.cat((canny_tensor, canny_tensor, canny_tensor), dim=1)
-            output_image = self.model(
-                canny_tensor,
-                params.prompt,
-                params.deterministic,
-                params.strength,
-            )
-            output_pil = transforms.ToPILImage()(output_image[0].cpu() * 0.5 + 0.5)
+        canny_tensor = torch.cat((canny_tensor, canny_tensor, canny_tensor), dim=1)
+        output_image = self.model(
+            canny_tensor,
+            params.prompt,
+            params.deterministic,
+            params.strength,
+        )
+        output_pil = transforms.ToPILImage()(output_image[0].cpu() * 0.5 + 0.5)
 
         result_image = output_pil
         if params.debug_canny:
