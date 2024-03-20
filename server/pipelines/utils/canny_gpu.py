@@ -5,6 +5,13 @@ from PIL import Image
 
 
 class SobelOperator(nn.Module):
+    SOBEL_KERNEL_X = torch.tensor(
+        [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]]
+    )
+    SOBEL_KERNEL_Y = torch.tensor(
+        [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]]
+    )
+
     def __init__(self, device="cuda"):
         super(SobelOperator, self).__init__()
         self.device = device
@@ -14,16 +21,12 @@ class SobelOperator(nn.Module):
         self.edge_conv_y = nn.Conv2d(1, 1, kernel_size=3, padding=1, bias=False).to(
             self.device
         )
-
-        sobel_kernel_x = torch.tensor(
-            [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]], device=self.device
+        self.edge_conv_x.weight = nn.Parameter(
+            self.SOBEL_KERNEL_X.view((1, 1, 3, 3)).to(self.device)
         )
-        sobel_kernel_y = torch.tensor(
-            [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]], device=self.device
+        self.edge_conv_y.weight = nn.Parameter(
+            self.SOBEL_KERNEL_Y.view((1, 1, 3, 3)).to(self.device)
         )
-
-        self.edge_conv_x.weight = nn.Parameter(sobel_kernel_x.view((1, 1, 3, 3)))
-        self.edge_conv_y.weight = nn.Parameter(sobel_kernel_y.view((1, 1, 3, 3)))
 
     @torch.no_grad()
     def forward(
@@ -40,10 +43,10 @@ class SobelOperator(nn.Module):
         # Compute gradients
         edge_x = self.edge_conv_x(image_tensor)
         edge_y = self.edge_conv_y(image_tensor)
-        edge = torch.sqrt(edge_x**2 + edge_y**2)
+        edge = torch.sqrt(torch.square(edge_x) + torch.square(edge_y))
 
         # Apply thresholding
-        edge = edge / edge.max()  # Normalize to 0-1
+        edge.div_(edge.max())  # Normalize to 0-1 (in-place operation)
         edge[edge >= high_threshold] = 1.0
         edge[edge <= low_threshold] = 0.0
 

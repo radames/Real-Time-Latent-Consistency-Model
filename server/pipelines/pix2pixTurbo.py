@@ -7,7 +7,6 @@ from PIL import Image
 from pipelines.pix2pix.pix2pix_turbo import Pix2Pix_Turbo
 from pipelines.utils.canny_gpu import SobelOperator
 
-
 default_prompt = "close-up photo of the joker"
 page_content = """
 <h1 class="text-3xl font-bold">Real-Time pix2pix_turbo</h1>
@@ -94,6 +93,7 @@ class Pipeline:
         self.model = Pix2Pix_Turbo("edge_to_image")
         self.canny_torch = SobelOperator(device=device)
         self.device = device
+        self.last_time = 0.0
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         # generator = torch.manual_seed(params.seed)
@@ -123,5 +123,4 @@ class Pipeline:
             control_image = canny_pil.resize((w0, h0))
             w1, h1 = result_image.size
             result_image.paste(control_image, (w1 - w0, h1 - h0))
-
         return result_image
