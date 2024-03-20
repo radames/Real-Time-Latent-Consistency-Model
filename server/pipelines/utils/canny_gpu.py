@@ -3,6 +3,7 @@ import torch.nn as nn
 from torchvision.transforms import ToTensor, ToPILImage
 from PIL import Image
 
+
 class SobelOperator(nn.Module):
     def __init__(self, device="cuda"):
         super(SobelOperator, self).__init__()
@@ -25,7 +26,13 @@ class SobelOperator(nn.Module):
         self.edge_conv_y.weight = nn.Parameter(sobel_kernel_y.view((1, 1, 3, 3)))
 
     @torch.no_grad()
-    def forward(self, image: Image.Image, low_threshold: float, high_threshold: float):
+    def forward(
+        self,
+        image: Image.Image,
+        low_threshold: float,
+        high_threshold: float,
+        output_type="pil",
+    ) -> Image.Image | torch.Tensor | tuple[Image.Image, torch.Tensor]:
         # Convert PIL image to PyTorch tensor
         image_gray = image.convert("L")
         image_tensor = ToTensor()(image_gray).unsqueeze(0).to(self.device)
@@ -41,4 +48,9 @@ class SobelOperator(nn.Module):
         edge[edge <= low_threshold] = 0.0
 
         # Convert the result back to a PIL image
-        return ToPILImage()(edge.squeeze(0).cpu())
+        if output_type == "pil":
+            return ToPILImage()(edge.squeeze(0).cpu())
+        elif output_type == "tensor":
+            return edge
+        elif output_type == "pil,tensor":
+            return ToPILImage()(edge.squeeze(0).cpu()), edge
