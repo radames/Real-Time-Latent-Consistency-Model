@@ -49,16 +49,20 @@ class Pipeline:
         height: int = Field(
             512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
-        strength: float = Field(
+        seed: int = Field(
+            2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
+        )
+        noise_r: float = Field(
             1.0,
             min=0.01,
-            max=10.0,
+            max=3.0,
             step=0.001,
-            title="Strength",
+            title="Noise R",
             field="range",
             hide=True,
-            id="strength",
+            id="noise_r",
         )
+
         deterministic: bool = Field(
             True,
             hide=True,
@@ -107,12 +111,17 @@ class Pipeline:
             params.canny_high_threshold,
             output_type="pil,tensor",
         )
+        torch.manual_seed(params.seed)
+        noise = torch.randn(
+            (1, 4, params.width // 8, params.height // 8), device=self.device
+        )
         canny_tensor = torch.cat((canny_tensor, canny_tensor, canny_tensor), dim=1)
         output_image = self.model(
             canny_tensor,
             params.prompt,
             params.deterministic,
-            params.strength,
+            params.noise_r,
+            noise,
         )
         output_pil = transforms.ToPILImage()(output_image[0].cpu() * 0.5 + 0.5)
 
