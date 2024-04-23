@@ -1,8 +1,8 @@
 from diffusers import (
-    StableDiffusionXLControlNetImg2ImgPipeline,
+    StableDiffusionControlNetImg2ImgPipeline,
     ControlNetModel,
-    AutoencoderKL,
     TCDScheduler,
+    DDIMScheduler,
 )
 from compel import Compel, ReturnedEmbeddingsType
 import torch
@@ -20,16 +20,16 @@ from pydantic import BaseModel, Field
 from PIL import Image
 import math
 
-controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
-model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+
+controlnet_model = "lllyasviel/control_v11p_sd15_canny"
+model_id = "runwayml/stable-diffusion-v1-5"
 taesd_model = "madebyollin/taesdxl"
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
 page_content = """
-<h1 class="text-3xl font-bold">Hyper-SDXL Unified</h1>
+<h1 class="text-3xl font-bold">Hyper-SD15 Unified</h1>
 <h3 class="text-xl font-bold">Image-to-Image ControlNet</h3>
-
 """
 
 
@@ -62,10 +62,10 @@ class Pipeline:
             2, min=1, max=15, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
-            1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            1024, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         guidance_scale: float = Field(
             0.0,
@@ -159,25 +159,21 @@ class Pipeline:
         controlnet_canny = ControlNetModel.from_pretrained(
             controlnet_model, torch_dtype=torch_dtype
         )
-        vae = AutoencoderKL.from_pretrained(
-            "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch_dtype
-        )
 
         if args.safety_checker:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
+            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 model_id, controlnet=controlnet_canny, vae=vae, torch_dtype=torch_dtype
             )
         else:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
+            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 model_id,
                 safety_checker=None,
                 controlnet=controlnet_canny,
-                vae=vae,
                 torch_dtype=torch_dtype,
             )
 
         self.pipe.load_lora_weights(
-            hf_hub_download("ByteDance/Hyper-SD", "Hyper-SDXL-1step-lora.safetensors")
+            hf_hub_download("ByteDance/Hyper-SD", "Hyper-SD15-1step-lora.safetensors")
         )
 
         self.pipe.scheduler = TCDScheduler.from_config(self.pipe.scheduler.config)
