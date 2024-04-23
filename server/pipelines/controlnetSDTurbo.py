@@ -160,20 +160,19 @@ class Pipeline:
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
         controlnet_canny = ControlNetModel.from_pretrained(
             controlnet_model, torch_dtype=torch_dtype
-        ).to(device)
-
+        )
         self.pipes = {}
 
         if args.safety_checker:
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                base_model,
-                controlnet=controlnet_canny,
+                base_model, controlnet=controlnet_canny, torch_dtype=torch_dtype
             )
         else:
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 base_model,
                 controlnet=controlnet_canny,
                 safety_checker=None,
+                torch_dtype=torch_dtype,
             )
 
         if args.taesd:
@@ -207,7 +206,7 @@ class Pipeline:
 
         self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.set_progress_bar_config(disable=True)
-        self.pipe.to(device=device, dtype=torch_dtype).to(device)
+        self.pipe.to(device=device, dtype=torch_dtype)
         if device.type != "mps":
             self.pipe.unet.to(memory_format=torch.channels_last)
 
