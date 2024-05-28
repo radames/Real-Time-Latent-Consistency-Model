@@ -1,14 +1,14 @@
-diffusers==0.25.1
-transformers==4.36.2
+diffusers==0.28.0
+transformers==4.41.1
 --extra-index-url https://download.pytorch.org/whl/cu121;
 torch==2.2.0
-fastapi==0.110.0
-uvicorn[standard]==0.25.0
-Pillow==10.2.0
-accelerate==0.25.0
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+Pillow==10.3.0
+accelerate==0.30.1
 compel==2.0.2
-controlnet-aux==0.0.7
-peft==0.9.0
+controlnet-aux==0.0.9
+peft==0.11.1
 xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
 markdown2
 safetensors
