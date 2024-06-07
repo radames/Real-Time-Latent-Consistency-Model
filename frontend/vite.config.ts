@@ -10,6 +10,6 @@ export default defineConfig({
         target: 'ws://localhost:7860',
         ws: true
       }
-    },
+    }
   }
 });
