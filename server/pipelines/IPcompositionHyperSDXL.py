@@ -1,12 +1,11 @@
 from diffusers import (
-    StableDiffusionXLControlNetImg2ImgPipeline,
-    ControlNetModel,
+    StableDiffusionXLPipeline,
     AutoencoderKL,
     TCDScheduler,
 )
 from compel import Compel, ReturnedEmbeddingsType
 import torch
-from pipelines.utils.canny_gpu import SobelOperator
+from transformers import CLIPVisionModelWithProjection
 from huggingface_hub import hf_hub_download
 
 try:
@@ -14,21 +13,19 @@ try:
 except:
     pass
 
-import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
-import math
 
-# controlnet_model = "diffusers/controlnet-canny-sdxl-1.0"
-controlnet_model = "xinsir/controlnet-canny-sdxl-1.0"
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 taesd_model = "madebyollin/taesdxl"
+ip_adapter_model = "ostris/ip-composition-adapter"
+file_name = "ip_plus_composition_sdxl.safetensors"
 
 default_prompt = "Portrait of The Terminator with , glare pose, detailed, intricate, full of colour, cinematic lighting, trending on artstation, 8k, hyperrealistic, focused, extreme details, unreal engine 5 cinematic, masterpiece"
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
 page_content = """
-<h1 class="text-3xl font-bold">Hyper-SDXL Unified</h1>
+<h1 class="text-3xl font-bold">Hyper-SDXL Unified + IP Adpater Composition</h1>
 <h3 class="text-xl font-bold">Image-to-Image ControlNet</h3>
 
 """
@@ -78,15 +75,15 @@ class Pipeline:
             hide=True,
             id="guidance_scale",
         )
-        strength: float = Field(
-            0.5,
-            min=0.25,
+        ip_adapter_scale: float = Field(
+            0.8,
+            min=0.0,
             max=1.0,
             step=0.001,
-            title="Strength",
+            title="IP Adapter Scale",
             field="range",
             hide=True,
-            id="strength",
+            id="ip_adapter_scale",
         )
         eta: float = Field(
             1.0,
@@ -98,93 +95,48 @@ class Pipeline:
             hide=True,
             id="eta",
         )
-        controlnet_scale: float = Field(
-            0.5,
-            min=0,
-            max=1.0,
-            step=0.001,
-            title="Controlnet Scale",
-            field="range",
-            hide=True,
-            id="controlnet_scale",
-        )
-        controlnet_start: float = Field(
-            0.0,
-            min=0,
-            max=1.0,
-            step=0.001,
-            title="Controlnet Start",
-            field="range",
-            hide=True,
-            id="controlnet_start",
-        )
-        controlnet_end: float = Field(
-            1.0,
-            min=0,
-            max=1.0,
-            step=0.001,
-            title="Controlnet End",
-            field="range",
-            hide=True,
-            id="controlnet_end",
-        )
-        canny_low_threshold: float = Field(
-            0.31,
-            min=0,
-            max=1.0,
-            step=0.001,
-            title="Canny Low Threshold",
-            field="range",
-            hide=True,
-            id="canny_low_threshold",
-        )
-        canny_high_threshold: float = Field(
-            0.125,
-            min=0,
-            max=1.0,
-            step=0.001,
-            title="Canny High Threshold",
-            field="range",
-            hide=True,
-            id="canny_high_threshold",
-        )
-        debug_canny: bool = Field(
-            False,
-            title="Debug Canny",
-            field="checkbox",
-            hide=True,
-            id="debug_canny",
-        )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
-        controlnet_canny = ControlNetModel.from_pretrained(
-            controlnet_model, torch_dtype=torch_dtype
-        )
         vae = AutoencoderKL.from_pretrained(
             "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch_dtype
         )
+        image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+            "h94/IP-Adapter",
+            subfolder="models/image_encoder",
+            torch_dtype=torch.float16,
+        ).to(device)
 
         if args.safety_checker:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
-                model_id, controlnet=controlnet_canny, vae=vae, torch_dtype=torch_dtype
+            self.pipe = StableDiffusionXLPipeline.from_pretrained(
+                model_id,
+                # vae=vae,
+                torch_dtype=torch_dtype,
+                image_encoder=image_encoder,
+                variant="fp16",
             )
         else:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
+            self.pipe = StableDiffusionXLPipeline.from_pretrained(
                 model_id,
                 safety_checker=None,
-                controlnet=controlnet_canny,
-                vae=vae,
                 torch_dtype=torch_dtype,
+                vae=vae,
+                image_encoder=image_encoder,
+                variant="fp16",
             )
+        self.pipe.load_ip_adapter(
+            ip_adapter_model,
+            subfolder="",
+            weight_name=[file_name],
+            image_encoder_folder=None,
+        )
 
         self.pipe.load_lora_weights(
             hf_hub_download("ByteDance/Hyper-SD", "Hyper-SDXL-1step-lora.safetensors")
         )
+        self.pipe.fuse_lora()
 
         self.pipe.scheduler = TCDScheduler.from_config(self.pipe.scheduler.config)
-
-        self.pipe.fuse_lora()
-        self.canny_torch = SobelOperator(device=device)
+        self.pipe.set_ip_adapter_scale([0.8])
 
         if args.sfast:
             from sfast.compilers.stable_diffusion_pipeline_compiler import (
@@ -221,11 +173,11 @@ class Pipeline:
             self.pipe(
                 prompt="warmup",
                 image=[Image.new("RGB", (768, 768))],
-                control_image=[Image.new("RGB", (768, 768))],
             )
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
+        self.pipe.set_ip_adapter_scale([params.ip_adapter_scale])
 
         prompt = params.prompt
         negative_prompt = params.negative_prompt
@@ -244,17 +196,9 @@ class Pipeline:
             negative_prompt_embeds = _prompt_embeds[1:2]
             negative_pooled_prompt_embeds = pooled_prompt_embeds[1:2]
 
-        control_image = self.canny_torch(
-            params.image, params.canny_low_threshold, params.canny_high_threshold
-        )
         steps = params.steps
-        strength = params.strength
-        if int(steps * strength) < 1:
-            steps = math.ceil(1 / max(0.10, strength))
 
         results = self.pipe(
-            image=params.image,
-            control_image=control_image,
             prompt=prompt,
             negative_prompt=negative_prompt,
             prompt_embeds=prompt_embeds,
@@ -262,16 +206,13 @@ class Pipeline:
             negative_prompt_embeds=negative_prompt_embeds,
             negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
             generator=generator,
-            strength=strength,
-            eta=params.eta,
             num_inference_steps=steps,
             guidance_scale=params.guidance_scale,
             width=params.width,
+            eta=params.eta,
             height=params.height,
+            ip_adapter_image=[params.image],
             output_type="pil",
-            controlnet_conditioning_scale=params.controlnet_scale,
-            control_guidance_start=params.controlnet_start,
-            control_guidance_end=params.controlnet_end,
         )
 
         nsfw_content_detected = (
@@ -282,11 +223,5 @@ class Pipeline:
         if nsfw_content_detected:
             return None
         result_image = results.images[0]
-        if params.debug_canny:
-            # paste control_image on top of result_image
-            w0, h0 = (200, 200)
-            control_image = control_image.resize((w0, h0))
-            w1, h1 = result_image.size
-            result_image.paste(control_image, (w1 - w0, h1 - h0))
 
         return result_image
