@@ -18,3 +18,4 @@ onediff @ git+https://github.com/siliconflow/onediff.git@main#egg=onediff ; sys_
 setuptools
 mpmath==1.3.0
 numpy==1.*
+controlnet-aux
