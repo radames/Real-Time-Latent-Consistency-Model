@@ -62,10 +62,10 @@ class Pipeline:
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
         )
         width: int = Field(
-            768, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
+            512, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
         )
         height: int = Field(
-            768, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
+            512, min=2, max=15, title="Height", disabled=True, hide=True, id="height"
         )
         strength: float = Field(
             0.5,
