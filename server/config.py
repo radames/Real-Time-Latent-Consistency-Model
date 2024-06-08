@@ -31,7 +31,7 @@ MAX_QUEUE_SIZE = int(os.environ.get("MAX_QUEUE_SIZE", 0))
 TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None) == "True"
 TORCH_COMPILE = os.environ.get("TORCH_COMPILE", None) == "True"
-USE_TAESD = os.environ.get("USE_TAESD", "True") == "True"
+USE_TAESD = os.environ.get("USE_TAESD", "False") == "True"
 default_host = os.getenv("HOST", "0.0.0.0")
 default_port = int(os.getenv("PORT", "7860"))
 
@@ -65,12 +65,6 @@ parser.add_argument(
     "--taesd",
     dest="taesd",
     action="store_true",
-    help="Use Tiny Autoencoder",
-)
-parser.add_argument(
-    "--no-taesd",
-    dest="taesd",
-    action="store_false",
     help="Use Tiny Autoencoder",
 )
 parser.add_argument(
