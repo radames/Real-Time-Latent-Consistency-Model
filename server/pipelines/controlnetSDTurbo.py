@@ -7,18 +7,17 @@ from diffusers import (
 from compel import Compel
 import torch
 from pipelines.utils.canny_gpu import SobelOperator
+from pipelines.utils.safety_checker import SafetyChecker
 
 try:
     import intel_extension_for_pytorch as ipex  # type: ignore
 except:
     pass
 
-import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
 import math
-import time
 
 #
 taesd_model = "madebyollin/taesd"
@@ -163,17 +162,16 @@ class Pipeline:
         )
         self.pipes = {}
 
+        self.safety_checker = None
         if args.safety_checker:
-            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                base_model, controlnet=controlnet_canny, torch_dtype=torch_dtype
-            )
-        else:
-            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                base_model,
-                controlnet=controlnet_canny,
-                safety_checker=None,
-                torch_dtype=torch_dtype,
-            )
+            self.safety_checker = SafetyChecker(device=device.type)
+
+        self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+            base_model,
+            controlnet=controlnet_canny,
+            safety_checker=None,
+            torch_dtype=torch_dtype,
+        )
 
         if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
@@ -269,13 +267,11 @@ class Pipeline:
             control_guidance_start=params.controlnet_start,
             control_guidance_end=params.controlnet_end,
         )
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
+        images = results.images
+        if self.safety_checker:
+            images, has_nsfw_concepts = self.safety_checker(images)
+            if any(has_nsfw_concepts):
+                return None
         result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image

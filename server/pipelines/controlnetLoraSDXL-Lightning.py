@@ -169,6 +169,7 @@ class Pipeline:
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
+        self.safety_checker = None
         if args.safety_checker:
             self.safety_checker = SafetyChecker(device=device.type)
 
@@ -292,9 +293,8 @@ class Pipeline:
         images = results.images
         if self.safety_checker:
             images, has_nsfw_concepts = self.safety_checker(images)
-        print(has_nsfw_concepts)
-        if any(has_nsfw_concepts):
-            return None
+            if any(has_nsfw_concepts):
+                return None
 
         result_image = results.images[0]
         if params.debug_canny:
