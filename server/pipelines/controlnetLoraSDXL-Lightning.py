@@ -9,6 +9,7 @@ from diffusers import (
 from compel import Compel, ReturnedEmbeddingsType
 import torch
 from pipelines.utils.canny_gpu import SobelOperator
+from pipelines.utils.safety_checker import SafetyChecker
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 
@@ -17,7 +18,6 @@ try:
 except:
     pass
 
-import psutil
 from config import Args
 from pydantic import BaseModel, Field
 from PIL import Image
@@ -35,7 +35,7 @@ default_prompt = "Portrait of The Terminator with , glare pose, detailed, intric
 default_negative_prompt = "blurry, low quality, render, 3D, oversaturated"
 page_content = """
 <h1 class="text-3xl font-bold">Real-Time Latent Consistency Model SDXL</h1>
-<h3 class="text-xl font-bold">SDXL-Lightining + LCM + LoRA + Controlnet</h3>
+<h3 class="text-xl font-bold">SDXL-Lightining + Controlnet</h3>
 <p class="text-sm">
     This demo showcases
     <a
@@ -83,9 +83,6 @@ class Pipeline:
         )
         seed: int = Field(
             2159232, min=0, title="Seed", field="seed", hide=True, id="seed"
-        )
-        steps: int = Field(
-            1, min=1, max=10, title="Steps", field="range", hide=True, id="steps"
         )
         width: int = Field(
             1024, min=2, max=15, title="Width", disabled=True, hide=True, id="width"
@@ -172,6 +169,8 @@ class Pipeline:
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
+        if args.safety_checker:
+            self.safety_checker = SafetyChecker(device=device.type)
 
         if args.taesd:
             vae = AutoencoderTiny.from_pretrained(
@@ -204,7 +203,7 @@ class Pipeline:
 
         self.canny_torch = SobelOperator(device=device)
         self.pipe.set_progress_bar_config(disable=True)
-        self.pipe.to(device=device, dtype=torch_dtype).to(device)
+        self.pipe.to(device=device, dtype=torch_dtype)
 
         if args.sfast:
             from sfast.compilers.stable_diffusion_pipeline_compiler import (
@@ -242,7 +241,7 @@ class Pipeline:
                 control_image=[Image.new("RGB", (768, 768))],
             )
 
-    def predict(self, params: "Pipeline.InputParams") -> Image.Image:
+    def predict(self, params: "Pipeline.InputParams") -> Image.Image | None:
         generator = torch.manual_seed(params.seed)
 
         prompt = params.prompt
@@ -265,7 +264,7 @@ class Pipeline:
         control_image = self.canny_torch(
             params.image, params.canny_low_threshold, params.canny_high_threshold
         )
-        steps = params.steps
+        steps = NUM_STEPS
         strength = params.strength
         if int(steps * strength) < 1:
             steps = math.ceil(1 / max(0.10, strength))
@@ -281,7 +280,7 @@ class Pipeline:
             negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
             generator=generator,
             strength=strength,
-            num_inference_steps=steps,
+            num_inference_steps=NUM_STEPS,
             guidance_scale=params.guidance_scale,
             width=params.width,
             height=params.height,
@@ -290,14 +289,13 @@ class Pipeline:
             control_guidance_start=params.controlnet_start,
             control_guidance_end=params.controlnet_end,
         )
-
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
+        images = results.images
+        if self.safety_checker:
+            images, has_nsfw_concepts = self.safety_checker(images)
+        print(has_nsfw_concepts)
+        if any(has_nsfw_concepts):
             return None
+
         result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image
