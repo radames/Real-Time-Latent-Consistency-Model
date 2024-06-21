@@ -7,6 +7,7 @@ from diffusers import (
 from compel import Compel, ReturnedEmbeddingsType
 import torch
 from pipelines.utils.canny_gpu import SobelOperator
+from pipelines.utils.safety_checker import SafetyChecker
 
 try:
     import intel_extension_for_pytorch as ipex  # type: ignore
@@ -170,19 +171,16 @@ class Pipeline:
         vae = AutoencoderKL.from_pretrained(
             "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch_dtype
         )
+        self.safety_checker = None
         if args.safety_checker:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
-                model_id,
-                controlnet=controlnet_canny,
-                vae=vae,
-            )
-        else:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
-                model_id,
-                safety_checker=None,
-                controlnet=controlnet_canny,
-                vae=vae,
-            )
+            self.safety_checker = SafetyChecker(device=device.type)
+
+        self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            controlnet=controlnet_canny,
+            vae=vae,
+        )
         self.canny_torch = SobelOperator(device=device)
 
         if args.sfast:
@@ -277,14 +275,13 @@ class Pipeline:
             control_guidance_end=params.controlnet_end,
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
-        result_image = results.images[0]
+        images = results.images
+        if self.safety_checker:
+            images, has_nsfw_concepts = self.safety_checker(images)
+            if any(has_nsfw_concepts):
+                return None
+
+        result_image = images[0]
         if params.debug_canny:
             # paste control_image on top of result_image
             w0, h0 = (200, 200)

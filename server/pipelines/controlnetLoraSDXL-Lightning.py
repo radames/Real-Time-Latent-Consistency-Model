@@ -296,7 +296,7 @@ class Pipeline:
             if any(has_nsfw_concepts):
                 return None
 
-        result_image = results.images[0]
+        result_image = images[0]
         if params.debug_canny:
             # paste control_image on top of result_image
             w0, h0 = (200, 200)
