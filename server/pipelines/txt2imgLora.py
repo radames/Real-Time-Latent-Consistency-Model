@@ -86,12 +86,7 @@ class Pipeline:
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
-        if args.safety_checker:
-            self.pipe = DiffusionPipeline.from_pretrained(base_model)
-        else:
-            self.pipe = DiffusionPipeline.from_pretrained(
-                base_model, safety_checker=None
-            )
+        self.pipe = DiffusionPipeline.from_pretrained(base_model, safety_checker=None)
         if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
@@ -152,11 +147,5 @@ class Pipeline:
             height=params.height,
             output_type="pil",
         )
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
+
         return results.images[0]

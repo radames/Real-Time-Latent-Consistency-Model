@@ -106,23 +106,14 @@ class Pipeline:
             torch_dtype=torch.float16,
         ).to(device)
 
-        if args.safety_checker:
-            self.pipe = StableDiffusionXLPipeline.from_pretrained(
-                model_id,
-                # vae=vae,
-                torch_dtype=torch_dtype,
-                image_encoder=image_encoder,
-                variant="fp16",
-            )
-        else:
-            self.pipe = StableDiffusionXLPipeline.from_pretrained(
-                model_id,
-                safety_checker=None,
-                torch_dtype=torch_dtype,
-                vae=vae,
-                image_encoder=image_encoder,
-                variant="fp16",
-            )
+        self.pipe = StableDiffusionXLPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            torch_dtype=torch_dtype,
+            vae=vae,
+            image_encoder=image_encoder,
+            variant="fp16",
+        )
         self.pipe.load_ip_adapter(
             ip_adapter_model,
             subfolder="",
@@ -214,14 +205,4 @@ class Pipeline:
             ip_adapter_image=[params.image],
             output_type="pil",
         )
-
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
-        result_image = results.images[0]
-
-        return result_image
+        return results.images[0]

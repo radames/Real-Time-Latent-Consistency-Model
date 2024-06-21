@@ -95,17 +95,12 @@ class Pipeline:
         vae = AutoencoderKL.from_pretrained(
             "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch_dtype
         )
-        if args.safety_checker:
-            self.pipe = DiffusionPipeline.from_pretrained(
-                model_id,
-                vae=vae,
-            )
-        else:
-            self.pipe = DiffusionPipeline.from_pretrained(
-                model_id,
-                safety_checker=None,
-                vae=vae,
-            )
+
+        self.pipe = DiffusionPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            vae=vae,
+        )
         # Load LCM LoRA
         self.pipe.load_lora_weights(lcm_lora_id, adapter_name="lcm")
         self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
@@ -184,13 +179,4 @@ class Pipeline:
             output_type="pil",
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
-        result_image = results.images[0]
-
-        return result_image
+        return results.images[0]

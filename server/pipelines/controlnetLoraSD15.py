@@ -174,21 +174,13 @@ class Pipeline:
 
         self.pipes = {}
 
-        if args.safety_checker:
-            for base_model_id in base_models.keys():
-                pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                    base_model_id,
-                    controlnet=controlnet_canny,
-                )
-                self.pipes[base_model_id] = pipe
-        else:
-            for base_model_id in base_models.keys():
-                pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                    base_model_id,
-                    safety_checker=None,
-                    controlnet=controlnet_canny,
-                )
-                self.pipes[base_model_id] = pipe
+        for base_model_id in base_models.keys():
+            pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+                base_model_id,
+                safety_checker=None,
+                controlnet=controlnet_canny,
+            )
+            self.pipes[base_model_id] = pipe
 
         self.canny_torch = SobelOperator(device=device)
 
@@ -262,13 +254,6 @@ class Pipeline:
             control_guidance_end=params.controlnet_end,
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
         result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image

@@ -9,7 +9,6 @@ from diffusers import (
 from compel import Compel, ReturnedEmbeddingsType
 import torch
 from pipelines.utils.canny_gpu import SobelOperator
-from pipelines.utils.safety_checker import SafetyChecker
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 
@@ -169,10 +168,6 @@ class Pipeline:
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
-        self.safety_checker = None
-        if args.safety_checker:
-            self.safety_checker = SafetyChecker(device=device.type)
-
         if args.taesd:
             vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
@@ -290,13 +285,7 @@ class Pipeline:
             control_guidance_start=params.controlnet_start,
             control_guidance_end=params.controlnet_end,
         )
-        images = results.images
-        if self.safety_checker:
-            images, has_nsfw_concepts = self.safety_checker(images)
-            if any(has_nsfw_concepts):
-                return None
-
-        result_image = images[0]
+        result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image
             w0, h0 = (200, 200)

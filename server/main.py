@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 import markdown2
-
+from pipelines.utils.safety_checker import SafetyChecker
+from PIL import Image
 import logging
 from config import config, Args
 from connection_manager import ConnectionManager, ServerFullException
@@ -28,6 +29,8 @@ class App:
         self.pipeline = pipeline
         self.app = FastAPI()
         self.conn_manager = ConnectionManager()
+        if self.args.safety_checker:
+            self.safety_checker = SafetyChecker(device=device.type)
         self.init_app()
 
     def init_app(self):
@@ -113,8 +116,14 @@ class App:
                         if params.__dict__ == last_params.__dict__ or params is None:
                             await asyncio.sleep(THROTTLE)
                             continue
-                        last_params = params
+                        last_params: SimpleNamespace = params
                         image = pipeline.predict(params)
+
+                        if self.args.safety_checker:
+                            image, has_nsfw_concept = self.safety_checker(image)
+                            if has_nsfw_concept:
+                                image = None
+
                         if image is None:
                             continue
                         frame = pil_to_frame(image)

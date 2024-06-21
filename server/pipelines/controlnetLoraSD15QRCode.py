@@ -154,11 +154,9 @@ class Pipeline:
                 controlnet=controlnet_qrcode,
             )
 
-        self.control_image = Image.open(
-            "qr-code.png").convert("RGB").resize((512, 512))
+        self.control_image = Image.open("qr-code.png").convert("RGB").resize((512, 512))
 
-        self.pipe.scheduler = LCMScheduler.from_config(
-            self.pipe.scheduler.config)
+        self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.set_progress_bar_config(disable=True)
         if device.type != "mps":
             self.pipe.unet.to(memory_format=torch.channels_last)
@@ -206,9 +204,7 @@ class Pipeline:
             steps = math.ceil(1 / max(0.10, strength))
 
         blend_qr_image = Image.blend(
-            params.image,
-            self.control_image,
-            alpha=params.blend
+            params.image, self.control_image, alpha=params.blend
         )
         results = self.pipe(
             image=blend_qr_image,
@@ -227,13 +223,4 @@ class Pipeline:
             control_guidance_end=params.controlnet_end,
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
-        result_image = results.images[0]
-
-        return result_image
+        return results.images[0]

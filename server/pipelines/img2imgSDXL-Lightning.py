@@ -110,7 +110,6 @@ class Pipeline:
         )
 
     def __init__(self, args: Args, device: torch.device, torch_dtype: torch.dtype):
-
         if args.taesd:
             vae = AutoencoderTiny.from_pretrained(
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
@@ -214,13 +213,4 @@ class Pipeline:
             output_type="pil",
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
-        result_image = results.images[0]
-
-        return result_image
+        return results.images[0]

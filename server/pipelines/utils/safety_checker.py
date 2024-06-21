@@ -150,14 +150,20 @@ class SafetyChecker:
         )
 
     def __call__(
-        self, images: list[Image.Image]
-    ) -> tuple[list[Image.Image], list[bool]]:
-        safety_checker_input = self.feature_extractor(images, return_tensors="pt").to(
-            self.device
-        )
+        self, images: list[Image.Image] | Image.Image
+    ) -> tuple[list[Image.Image], list[bool]] | tuple[Image.Image, bool]:
+        images_list = [images] if isinstance(images, Image.Image) else images
+
+        safety_checker_input = self.feature_extractor(
+            images_list, return_tensors="pt"
+        ).to(self.device)
+
         has_nsfw_concepts = self.safety_checker(
-            images=[images],
+            images=[images_list],
             clip_input=safety_checker_input.pixel_values.to(self.device),
         )
+
+        if isinstance(images, Image.Image):
+            return images, has_nsfw_concepts[0]
 
         return images, has_nsfw_concepts

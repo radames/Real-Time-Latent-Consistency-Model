@@ -138,17 +138,12 @@ class Pipeline:
             controlnet_model, torch_dtype=torch_dtype
         )
 
-        if args.safety_checker:
-            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                model_id, controlnet=controlnet_canny, torch_dtype=torch_dtype
-            )
-        else:
-            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                model_id,
-                safety_checker=None,
-                controlnet=controlnet_canny,
-                torch_dtype=torch_dtype,
-            )
+        self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            controlnet=controlnet_canny,
+            torch_dtype=torch_dtype,
+        )
 
         self.pipe.scheduler = LCMScheduler.from_pretrained(
             model_id,
@@ -252,13 +247,6 @@ class Pipeline:
             control_guidance_end=params.controlnet_end,
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
         result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image

@@ -164,18 +164,13 @@ class Pipeline:
             "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch_dtype
         )
 
-        if args.safety_checker:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
-                model_id, controlnet=controlnet_canny, vae=vae, torch_dtype=torch_dtype
-            )
-        else:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
-                model_id,
-                safety_checker=None,
-                controlnet=controlnet_canny,
-                vae=vae,
-                torch_dtype=torch_dtype,
-            )
+        self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            controlnet=controlnet_canny,
+            vae=vae,
+            torch_dtype=torch_dtype,
+        )
 
         self.pipe.load_lora_weights(
             hf_hub_download("ByteDance/Hyper-SD", "Hyper-SDXL-1step-lora.safetensors")
@@ -274,13 +269,6 @@ class Pipeline:
             control_guidance_end=params.controlnet_end,
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
         result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image

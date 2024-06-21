@@ -148,17 +148,12 @@ class Pipeline:
             device=device,
         )
 
-        if args.safety_checker:
-            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                model_id, controlnet=controlnet_depth, torch_dtype=torch_dtype
-            )
-        else:
-            self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                model_id,
-                safety_checker=None,
-                controlnet=controlnet_depth,
-                torch_dtype=torch_dtype,
-            )
+        self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            controlnet=controlnet_depth,
+            torch_dtype=torch_dtype,
+        )
 
         if args.taesd:
             self.pipe.vae = AutoencoderTiny.from_pretrained(
@@ -259,13 +254,6 @@ class Pipeline:
             control_guidance_end=params.controlnet_end,
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
         result_image = results.images[0]
         if params.debug_depth:
             # paste control_image on top of result_image

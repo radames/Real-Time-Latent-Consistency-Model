@@ -7,7 +7,6 @@ from diffusers import (
 from compel import Compel
 import torch
 from pipelines.utils.canny_gpu import SobelOperator
-from pipelines.utils.safety_checker import SafetyChecker
 
 try:
     import intel_extension_for_pytorch as ipex  # type: ignore
@@ -162,10 +161,6 @@ class Pipeline:
         )
         self.pipes = {}
 
-        self.safety_checker = None
-        if args.safety_checker:
-            self.safety_checker = SafetyChecker(device=device.type)
-
         self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
             base_model,
             controlnet=controlnet_canny,
@@ -267,13 +262,7 @@ class Pipeline:
             control_guidance_start=params.controlnet_start,
             control_guidance_end=params.controlnet_end,
         )
-        images = results.images
-        if self.safety_checker:
-            images, has_nsfw_concepts = self.safety_checker(images)
-            if any(has_nsfw_concepts):
-                return None
-
-        result_image = images[0]
+        result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image
             w0, h0 = (200, 200)

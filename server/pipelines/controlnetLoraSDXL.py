@@ -173,19 +173,12 @@ class Pipeline:
         vae = AutoencoderKL.from_pretrained(
             "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch_dtype
         )
-        if args.safety_checker:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
-                model_id,
-                controlnet=controlnet_canny,
-                vae=vae,
-            )
-        else:
-            self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
-                model_id,
-                safety_checker=None,
-                controlnet=controlnet_canny,
-                vae=vae,
-            )
+        self.pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(
+            model_id,
+            safety_checker=None,
+            controlnet=controlnet_canny,
+            vae=vae,
+        )
         self.canny_torch = SobelOperator(device=device)
         # Load LCM LoRA
         self.pipe.load_lora_weights(lcm_lora_id, adapter_name="lcm")
@@ -196,8 +189,7 @@ class Pipeline:
         )
         self.pipe.set_adapters(["lcm", "toy"], adapter_weights=[1.0, 0.8])
 
-        self.pipe.scheduler = LCMScheduler.from_config(
-            self.pipe.scheduler.config)
+        self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype).to(device)
 
@@ -219,8 +211,7 @@ class Pipeline:
         if args.compel:
             self.pipe.compel_proc = Compel(
                 tokenizer=[self.pipe.tokenizer, self.pipe.tokenizer_2],
-                text_encoder=[self.pipe.text_encoder,
-                              self.pipe.text_encoder_2],
+                text_encoder=[self.pipe.text_encoder, self.pipe.text_encoder_2],
                 returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
                 requires_pooled=[False, True],
             )
@@ -292,13 +283,6 @@ class Pipeline:
             control_guidance_end=params.controlnet_end,
         )
 
-        nsfw_content_detected = (
-            results.nsfw_content_detected[0]
-            if "nsfw_content_detected" in results
-            else False
-        )
-        if nsfw_content_detected:
-            return None
         result_image = results.images[0]
         if params.debug_canny:
             # paste control_image on top of result_image
