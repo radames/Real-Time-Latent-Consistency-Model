@@ -1,26 +1,27 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  let {
+    change,
+    aspectRatio = $bindable(),
+  }: { change: (aspectRatio: number) => void; aspectRatio: number } = $props();
 
-  let options: string[] = ['1:1', '16:9', '4:3', '3:2', '3:4', '9:16'];
-  export let aspectRatio: number = 1;
-  const dispatchEvent = createEventDispatcher();
+  let options: string[] = ["1:1", "16:9", "4:3", "3:2", "3:4", "9:16"];
 
   function onChange(e: Event) {
     const target = e.target as HTMLSelectElement;
     const value = target.value;
-    const [width, height] = value.split(':').map((v) => parseInt(v));
+    const [width, height] = value.split(":").map((v) => parseInt(v));
     aspectRatio = width / height;
-    dispatchEvent('change', aspectRatio);
+    change(aspectRatio);
   }
 </script>
 
 <div class="relative">
   <select
-    on:change={onChange}
+    onchange={onChange}
     title="Aspect Ratio"
-    class="border-1 block cursor-pointer rounded-md border-gray-800 border-opacity-50 bg-slate-100 bg-opacity-30 p-1 font-medium text-white"
+    class="block cursor-pointer rounded-md border border-gray-800/50 bg-slate-100/30 p-1 font-medium text-white"
   >
-    {#each options as option, i}
+    {#each options as option (option)}
       <option value={option}>{option}</option>
     {/each}
   </select>

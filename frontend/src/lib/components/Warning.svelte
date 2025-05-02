@@ -1,14 +1,16 @@
 <script lang="ts">
-  export let message: string = '';
+  let { message = $bindable() }: { message: string } = $props();
 
-  let timeout = 0;
-  $: if (message !== '') {
-    console.log('message', message);
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      message = '';
-    }, 5000);
-  }
+  let timeout = $state(0);
+  $effect(() => {
+    if (message !== "") {
+      console.log("message", message);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        message = "";
+      }, 5000);
+    }
+  });
 </script>
 
 {#if message}
@@ -16,8 +18,8 @@
     <button
       type="button"
       class="w-full"
-      on:click={() => (message = '')}
-      on:keydown={(e) => e.key === 'Enter' && (message = '')}
+      onclick={() => (message = "")}
+      onkeydown={(e) => e.key === "Enter" && (message = "")}
     >
       <div class="rounded bg-red-800 p-4 text-white">
         {message}

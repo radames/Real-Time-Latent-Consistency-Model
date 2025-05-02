@@ -1,40 +1,40 @@
-import * as piexif from 'piexifjs';
+import * as piexif from "piexifjs";
 
-interface IImageInfo {
+export interface IImageInfo {
   prompt?: string;
   negative_prompt?: string;
   seed?: number;
   guidance_scale?: number;
 }
+
 export enum windowType {
-  image = 'image',
-  video = 'video'
+  image = "image",
 }
 
 export function snapImage(imageEl: HTMLImageElement, info: IImageInfo) {
   try {
-    const zeroth: { [key: string]: any } = {};
-    const exif: { [key: string]: any } = {};
-    const gps: { [key: string]: any } = {};
-    zeroth[piexif.ImageIFD.Make] = 'LCM Image-to-Image ControNet';
+    const zeroth: { [key: string]: string | number } = {};
+    const exif: { [key: string]: string | number } = {};
+    const gps: { [key: string]: string | number } = {};
+    zeroth[piexif.ImageIFD.Make] = "LCM Image-to-Image ControNet";
     zeroth[piexif.ImageIFD.ImageDescription] =
       `prompt: ${info?.prompt} | negative_prompt: ${info?.negative_prompt} | seed: ${info?.seed} | guidance_scale: ${info?.guidance_scale}`;
     zeroth[piexif.ImageIFD.Software] =
-      'https://github.com/radames/Real-Time-Latent-Consistency-Model';
+      "https://github.com/radames/Real-Time-Latent-Consistency-Model";
     exif[piexif.ExifIFD.DateTimeOriginal] = new Date().toISOString();
 
-    const exifObj = { '0th': zeroth, Exif: exif, GPS: gps };
+    const exifObj = { "0th": zeroth, Exif: exif, GPS: gps };
     const exifBytes = piexif.dump(exifObj);
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = imageEl.naturalWidth;
     canvas.height = imageEl.naturalHeight;
-    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     ctx.drawImage(imageEl, 0, 0);
-    const dataURL = canvas.toDataURL('image/jpeg');
+    const dataURL = canvas.toDataURL("image/jpeg");
     const withExif = piexif.insert(exifBytes, dataURL);
 
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = withExif;
     a.download = `lcm_txt_2_img${Date.now()}.png`;
     a.click();
@@ -43,11 +43,11 @@ export function snapImage(imageEl: HTMLImageElement, info: IImageInfo) {
   }
 }
 
-export function expandWindow(streamURL: string, type: windowType = windowType.image) {
+export function expandWindow(streamURL: string) {
   const newWindow = window.open(
-    '',
-    '_blank',
-    'width=1024,height=1024,scrollbars=0,resizable=1,toolbar=0,menubar=0,location=0,directories=0,status=0'
+    "",
+    "_blank",
+    "width=1024,height=1024,scrollbars=0,resizable=1,toolbar=0,menubar=0,location=0,directories=0,status=0",
   ) as Window;
 
   const html = `
@@ -87,11 +87,11 @@ export function expandWindow(streamURL: string, type: windowType = windowType.im
       `;
   newWindow.document.write(html);
 
-  const img = newWindow.document.createElement('img');
+  const img = newWindow.document.createElement("img");
   img.src = streamURL;
-  img.style.width = '100%';
-  img.style.height = '100%';
-  img.style.objectFit = 'contain';
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = "contain";
   newWindow.document.body.appendChild(img);
 
   return newWindow;

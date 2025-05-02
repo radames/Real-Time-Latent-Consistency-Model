@@ -1,14 +1,14 @@
 export const enum FieldType {
-  RANGE = 'range',
-  SEED = 'seed',
-  TEXTAREA = 'textarea',
-  CHECKBOX = 'checkbox',
-  SELECT = 'select'
+  RANGE = "range",
+  SEED = "seed",
+  TEXTAREA = "textarea",
+  CHECKBOX = "checkbox",
+  SELECT = "select",
 }
 export const enum PipelineMode {
-  IMAGE = 'image',
-  VIDEO = 'video',
-  TEXT = 'text'
+  IMAGE = "image",
+  VIDEO = "video",
+  TEXT = "text",
 }
 
 export interface Fields {

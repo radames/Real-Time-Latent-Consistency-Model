@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { FieldProps } from '$lib/types';
-  import { onMount } from 'svelte';
-  export let value = '';
-  export let params: FieldProps;
+  import { onMount } from "svelte";
+  import type { FieldProps } from "$lib/types";
+  let { value = $bindable(""), params }: { value: string; params: FieldProps } =
+    $props();
+
   onMount(() => {
     value = String(params?.default);
   });
@@ -16,7 +17,7 @@
       id="model-list"
       class="cursor-pointer rounded-md border-2 border-gray-500 p-2 font-light dark:text-black"
     >
-      {#each params.values as model, i}
+      {#each params.values as model, i (model)}
         <option value={model} selected={i === 0}>{model}</option>
       {/each}
     </select>

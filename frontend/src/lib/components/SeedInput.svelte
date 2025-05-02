@@ -1,16 +1,16 @@
 <script lang="ts">
-  import type { FieldProps } from '$lib/types';
-  import { onMount } from 'svelte';
-  import Button from './Button.svelte';
-  export let value = 299792458;
-  export let params: FieldProps;
+  import Button from "./Button.svelte";
+  import { onMount } from "svelte";
+  import type { FieldProps } from "$lib/types";
+  let { value = $bindable(), params }: { value: number; params: FieldProps } =
+    $props();
 
-  onMount(() => {
-    value = Number(params?.default ?? '');
-  });
   function randomize() {
     value = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
   }
+  onMount(() => {
+    value = Number(params?.default ?? "");
+  });
 </script>
 
 <div class="grid max-w-md grid-cols-4 items-center gap-3">
@@ -22,5 +22,5 @@
     name="seed"
     class="col-span-2 rounded-md border border-gray-700 p-2 text-right font-light dark:text-black"
   />
-  <Button on:click={randomize}>Rand</Button>
+  <Button onclick={randomize}>Rand</Button>
 </div>

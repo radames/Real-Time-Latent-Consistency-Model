@@ -1,4 +1,4 @@
-declare module 'piexifjs' {
+declare module "piexifjs" {
   export const ImageIFD: {
     Make: number;
     ImageDescription: number;
@@ -7,6 +7,6 @@ declare module 'piexifjs' {
   export const ExifIFD: {
     DateTimeOriginal: number;
   };
-  export function dump(exifObj: any): any;
-  export function insert(exifBytes: any, dataURL: string): string;
+  export function dump(exifObj: Record<string, unknown>): string;
+  export function insert(exifBytes: string, dataURL: string): string;
 }

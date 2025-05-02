@@ -1,38 +1,40 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import type { Fields, PipelineInfo } from '$lib/types';
-  import { PipelineMode } from '$lib/types';
-  import ImagePlayer from '$lib/components/ImagePlayer.svelte';
-  import VideoInput from '$lib/components/VideoInput.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import PipelineOptions from '$lib/components/PipelineOptions.svelte';
-  import Spinner from '$lib/icons/spinner.svelte';
-  import Warning from '$lib/components/Warning.svelte';
-  import { lcmLiveStatus, lcmLiveActions, LCMLiveStatus } from '$lib/lcmLive';
-  import { mediaStreamActions, onFrameChangeStore } from '$lib/mediaStream';
-  import { getPipelineValues, deboucedPipelineValues } from '$lib/store';
+  import { onMount } from "svelte";
+  import type { Fields, PipelineInfo } from "$lib/types";
+  import { PipelineMode } from "$lib/types";
+  import ImagePlayer from "$lib/components/ImagePlayer.svelte";
+  import VideoInput from "$lib/components/VideoInput.svelte";
+  import Button from "$lib/components/Button.svelte";
+  import PipelineOptions from "$lib/components/PipelineOptions.svelte";
+  import Spinner from "$lib/icons/spinner.svelte";
+  import Warning from "$lib/components/Warning.svelte";
+  import { lcmLiveStatus, lcmLiveActions, LCMLiveStatus } from "$lib/lcmLive";
+  import { mediaStreamActions, onFrameChangeStore } from "$lib/mediaStream";
+  import { getPipelineValues, deboucedPipelineValues } from "$lib/store";
 
-  let pipelineParams: Fields;
-  let pipelineInfo: PipelineInfo;
-  let pageContent: string;
-  let isImageMode: boolean = false;
-  let maxQueueSize: number = 0;
-  let currentQueueSize: number = 0;
-  let queueCheckerRunning: boolean = false;
-  let warningMessage: string = '';
+  let pipelineParams: Fields | undefined = $state();
+  let pipelineInfo: PipelineInfo | undefined = $state();
+  let pageContent: string | undefined = $state();
+  let isImageMode: boolean = $state(false);
+  let maxQueueSize: number = $state(0);
+  let currentQueueSize: number = $state(0);
+  let disabled: boolean = $state(false);
+  let queueCheckerRunning: boolean = $state(false);
+  let warningMessage: string = $state("");
+
   onMount(() => {
     getSettings();
   });
 
   async function getSettings() {
-    const settings = await fetch('/api/settings').then((r) => r.json());
+    const settings = await fetch("/api/settings").then((r) => r.json());
     pipelineParams = settings.input_params.properties;
     pipelineInfo = settings.info.properties;
-    isImageMode = pipelineInfo.input_mode.default === PipelineMode.IMAGE;
+    isImageMode = pipelineInfo?.input_mode?.default === PipelineMode.IMAGE;
     maxQueueSize = settings.max_queue_size;
     pageContent = settings.page_content;
-    console.log(pipelineParams);
     toggleQueueChecker(true);
+    console.log(pipelineParams);
   }
   function toggleQueueChecker(start: boolean) {
     queueCheckerRunning = start && maxQueueSize > 0;
@@ -44,12 +46,13 @@
     if (!queueCheckerRunning) {
       return;
     }
-    const data = await fetch('/api/queue').then((r) => r.json());
+    const data = await fetch("/api/queue").then((r) => r.json());
     currentQueueSize = data.queue_size;
     setTimeout(getQueueSize, 10000);
   }
-
-  function getSreamdata() {
+  function getSreamdata():
+    | [Record<string, unknown>]
+    | [Record<string, unknown>, Blob] {
     if (isImageMode) {
       return [getPipelineValues(), $onFrameChangeStore?.blob];
     } else {
@@ -57,19 +60,20 @@
     }
   }
 
-  $: isLCMRunning =
-    $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED && $lcmLiveStatus !== LCMLiveStatus.ERROR;
-  $: isConnecting = $lcmLiveStatus === LCMLiveStatus.CONNECTING;
+  const isLCMRunning = $derived(
+    $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED &&
+      $lcmLiveStatus !== LCMLiveStatus.ERROR,
+  );
+  const isConnecting = $derived($lcmLiveStatus === LCMLiveStatus.CONNECTING);
 
-  $: {
+  $effect(() => {
     // Set warning messages based on lcmLiveStatus
     if ($lcmLiveStatus === LCMLiveStatus.TIMEOUT) {
-      warningMessage = 'Session timed out. Please try again.';
+      warningMessage = "Session timed out. Please try again.";
     } else if ($lcmLiveStatus === LCMLiveStatus.ERROR) {
-      warningMessage = 'Connection error occurred. Please try again.';
+      warningMessage = "Connection error occurred. Please try again.";
     }
-  }
-  let disabled = false;
+  });
   async function toggleLcmLive() {
     try {
       if (!isLCMRunning) {
@@ -78,7 +82,7 @@
         }
 
         // Clear any previous warning messages
-        warningMessage = '';
+        warningMessage = "";
         disabled = true;
 
         try {
@@ -108,8 +112,9 @@
         }
       }
     } catch (e) {
-      console.error('Error in toggleLcmLive:', e);
-      warningMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+      console.error("Error in toggleLcmLive:", e);
+      warningMessage =
+        e instanceof Error ? e.message : "An unknown error occurred";
       disabled = false;
       toggleQueueChecker(true);
     }
@@ -119,7 +124,7 @@
   async function reconnect() {
     try {
       disabled = true;
-      warningMessage = 'Reconnecting...';
+      warningMessage = "Reconnecting...";
 
       if (isImageMode) {
         await mediaStreamActions.stop();
@@ -128,10 +133,10 @@
       }
 
       await lcmLiveActions.reconnect(getSreamdata);
-      warningMessage = '';
+      warningMessage = "";
       toggleQueueChecker(false);
     } catch (e) {
-      warningMessage = e instanceof Error ? e.message : 'Reconnection failed';
+      warningMessage = e instanceof Error ? e.message : "Reconnection failed";
       toggleQueueChecker(true);
     } finally {
       disabled = false;
@@ -149,12 +154,16 @@
   <Warning bind:message={warningMessage}></Warning>
   <article class="text-center">
     {#if pageContent}
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html pageContent}
     {/if}
     {#if maxQueueSize > 0}
       <p class="text-sm">
-        There are <span id="queue_size" class="font-bold">{currentQueueSize}</span>
-        user(s) sharing the same GPU, affecting real-time performance. Maximum queue size is {maxQueueSize}.
+        There are <span id="queue_size" class="font-bold"
+          >{currentQueueSize}</span
+        >
+        user(s) sharing the same GPU, affecting real-time performance. Maximum queue
+        size is {maxQueueSize}.
         <a
           href="https://huggingface.co/spaces/radames/Real-Time-Latent-Consistency-Model?duplicate=true"
           target="_blank"
@@ -165,7 +174,11 @@
 
     {#if $lcmLiveStatus === LCMLiveStatus.ERROR}
       <p class="mt-2 text-sm">
-        <button class="text-blue-500 underline hover:no-underline" on:click={reconnect} {disabled}>
+        <button
+          class="text-blue-500 underline hover:no-underline"
+          onclick={reconnect}
+          {disabled}
+        >
           Try reconnecting
         </button>
       </p>
@@ -181,11 +194,11 @@
           ></VideoInput>
         </div>
       {/if}
-      <div class={isImageMode ? 'col-span-2 sm:col-start-3' : 'col-span-4'}>
+      <div class={isImageMode ? "col-span-2 sm:col-start-3" : "col-span-4"}>
         <ImagePlayer />
       </div>
       <div class="sm:col-span-4 sm:row-start-2">
-        <Button on:click={toggleLcmLive} {disabled} classList={'text-lg my-1 p-2'}>
+        <Button onclick={toggleLcmLive} {disabled} class="my-1 p-2 text-lg">
           {#if isConnecting}
             Connecting...
           {:else if isLCMRunning}
@@ -200,13 +213,14 @@
   {:else}
     <!-- loading -->
     <div class="flex items-center justify-center gap-3 py-48 text-2xl">
-      <Spinner classList={'animate-spin opacity-50'}></Spinner>
+      <Spinner class="animate-spin opacity-50"></Spinner>
       <p>Loading...</p>
     </div>
   {/if}
 </main>
 
 <style lang="postcss">
+  @reference "tailwindcss";
   :global(html) {
     @apply text-black dark:bg-gray-900 dark:text-white;
   }

@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { FieldProps } from '$lib/types';
-  import { onMount } from 'svelte';
-  export let value: string;
-  export let params: FieldProps;
+  import { onMount } from "svelte";
+  import type { FieldProps } from "$lib/types";
+  let { value = $bindable(), params }: { value: string; params: FieldProps } =
+    $props();
+
   onMount(() => {
-    value = String(params?.default ?? '');
+    value = String(params?.default ?? "");
   });
 </script>
 

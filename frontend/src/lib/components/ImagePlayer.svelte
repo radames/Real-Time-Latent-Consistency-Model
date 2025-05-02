@@ -1,31 +1,35 @@
 <script lang="ts">
-  import { lcmLiveStatus, LCMLiveStatus, streamId } from '$lib/lcmLive';
-  import { getPipelineValues } from '$lib/store';
+  import { lcmLiveStatus, LCMLiveStatus, streamId } from "$lib/lcmLive";
+  import { getPipelineValues } from "$lib/store";
 
-  import Button from '$lib/components/Button.svelte';
-  import Floppy from '$lib/icons/floppy.svelte';
-  import Expand from '$lib/icons/expand.svelte';
-  import { snapImage, expandWindow } from '$lib/utils';
+  import Button from "$lib/components/Button.svelte";
+  import Floppy from "$lib/icons/floppy.svelte";
+  import Expand from "$lib/icons/expand.svelte";
+  import { snapImage, expandWindow } from "$lib/utils";
 
-  $: isLCMRunning =
-    $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED && $lcmLiveStatus !== LCMLiveStatus.ERROR;
-  let imageEl: HTMLImageElement;
-  let expandedWindow: Window;
-  let isExpanded = false;
+  let isLCMRunning = $derived(
+    $lcmLiveStatus !== LCMLiveStatus.DISCONNECTED &&
+      $lcmLiveStatus !== LCMLiveStatus.ERROR,
+  );
+
+  let imageEl: HTMLImageElement | undefined = $state();
+  let expandedWindow: Window | undefined = $state();
+  let isExpanded = $state(false);
+
   async function takeSnapshot() {
-    if (isLCMRunning) {
+    if (isLCMRunning && imageEl) {
       await snapImage(imageEl, {
-        prompt: getPipelineValues()?.prompt,
-        negative_prompt: getPipelineValues()?.negative_prompt,
-        seed: getPipelineValues()?.seed,
-        guidance_scale: getPipelineValues()?.guidance_scale
+        prompt: getPipelineValues()?.prompt as string,
+        negative_prompt: getPipelineValues()?.negative_prompt as string,
+        seed: getPipelineValues()?.seed as number,
+        guidance_scale: getPipelineValues()?.guidance_scale as number,
       });
     }
   }
   async function toggleFullscreen() {
     if (isLCMRunning && !isExpanded) {
-      expandedWindow = expandWindow('/api/stream/' + $streamId);
-      expandedWindow.addEventListener('beforeunload', () => {
+      expandedWindow = expandWindow("/api/stream/" + $streamId);
+      expandedWindow.addEventListener("beforeunload", () => {
         isExpanded = false;
       });
       isExpanded = true;
@@ -39,22 +43,24 @@
 <div
   class="relative mx-auto aspect-square max-w-lg self-center overflow-hidden rounded-lg border border-slate-300"
 >
-  <!-- svelte-ignore a11y-missing-attribute -->
   {#if $lcmLiveStatus === LCMLiveStatus.CONNECTING}
     <!-- Show connecting spinner -->
     <div class="flex h-full w-full items-center justify-center">
-      <div class="h-16 w-16 animate-spin rounded-full border-b-2 border-white"></div>
+      <div
+        class="h-16 w-16 animate-spin rounded-full border-b-2 border-white"
+      ></div>
       <p class="ml-2 text-white">Connecting...</p>
     </div>
   {:else if isLCMRunning}
     {#if !isExpanded}
       <!-- Handle image error by adding onerror event -->
+      <!-- svelte-ignore a11y_missing_attribute -->
       <img
         bind:this={imageEl}
         class="aspect-square w-full rounded-lg"
-        src={'/api/stream/' + $streamId}
-        on:error={(e) => {
-          console.error('Image stream error:', e);
+        src={"/api/stream/" + $streamId}
+        onerror={(e) => {
+          console.error("Image stream error:", e);
           // If stream fails to load, set status to error
           if ($lcmLiveStatus !== LCMLiveStatus.ERROR) {
             lcmLiveStatus.set(LCMLiveStatus.ERROR);
@@ -64,19 +70,19 @@
     {/if}
     <div class="absolute bottom-1 right-1">
       <Button
-        on:click={toggleFullscreen}
-        title={'Expand Fullscreen'}
-        classList={'text-sm ml-auto text-white p-1 shadow-lg rounded-lg opacity-50'}
+        onclick={toggleFullscreen}
+        title="Expand Fullscreen"
+        class="ml-auto rounded-lg p-1 text-sm text-white opacity-50 shadow-lg"
       >
-        <Expand classList={''} />
+        <Expand />
       </Button>
       <Button
-        on:click={takeSnapshot}
+        onclick={takeSnapshot}
         disabled={!isLCMRunning}
-        title={'Take Snapshot'}
-        classList={'text-sm ml-auto text-white p-1 shadow-lg rounded-lg opacity-50'}
+        title="Take Snapshot"
+        class="ml-auto rounded-lg p-1 text-sm text-white opacity-50 shadow-lg"
       >
-        <Floppy classList={''} />
+        <Floppy />
       </Button>
     </div>
   {:else if $lcmLiveStatus === LCMLiveStatus.ERROR}
@@ -87,6 +93,7 @@
       <p class="p-4 text-center text-white">Connection error</p>
     </div>
   {:else}
+    <!-- svelte-ignore a11y_missing_attribute -->
     <img
       class="aspect-square w-full rounded-lg"
       src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="

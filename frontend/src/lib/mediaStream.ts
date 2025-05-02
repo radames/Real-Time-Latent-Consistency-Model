@@ -1,12 +1,14 @@
-import { get, writable, type Writable } from 'svelte/store';
+import { get, writable, type Writable } from "svelte/store";
 
 const BASE_HEIGHT = 720;
 export enum MediaStreamStatusEnum {
-  INIT = 'init',
-  CONNECTED = 'connected',
-  DISCONNECTED = 'disconnected'
+  INIT = "init",
+  CONNECTED = "connected",
+  DISCONNECTED = "disconnected",
 }
-export const onFrameChangeStore: Writable<{ blob: Blob }> = writable({ blob: new Blob() });
+export const onFrameChangeStore: Writable<{ blob: Blob }> = writable({
+  blob: new Blob(),
+});
 
 export const mediaDevices = writable<MediaDeviceInfo[]>([]);
 export const mediaStreamStatus = writable(MediaStreamStatusEnum.INIT);
@@ -18,7 +20,9 @@ export const mediaStreamActions = {
     await navigator.mediaDevices
       .enumerateDevices()
       .then((devices) => {
-        const cameras = devices.filter((device) => device.kind === 'videoinput');
+        const cameras = devices.filter(
+          (device) => device.kind === "videoinput",
+        );
         mediaDevices.set(cameras);
       })
       .catch((err) => {
@@ -30,13 +34,13 @@ export const mediaStreamActions = {
       audio: false,
       video: {
         width: {
-          ideal: BASE_HEIGHT * aspectRatio
+          ideal: BASE_HEIGHT * aspectRatio,
         },
         height: {
-          ideal: BASE_HEIGHT
+          ideal: BASE_HEIGHT,
         },
-        deviceId: mediaDevicedID
-      }
+        deviceId: mediaDevicedID,
+      },
     };
 
     await navigator.mediaDevices
@@ -54,34 +58,35 @@ export const mediaStreamActions = {
   async startScreenCapture() {
     const displayMediaOptions = {
       video: {
-        displaySurface: 'window'
+        displaySurface: "window",
       },
       audio: false,
-      surfaceSwitching: 'include'
+      surfaceSwitching: "include",
     };
 
     let captureStream = null;
 
     try {
-      captureStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+      captureStream =
+        await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
       const videoTrack = captureStream.getVideoTracks()[0];
 
-      console.log('Track settings:');
+      console.log("Track settings:");
       console.log(JSON.stringify(videoTrack.getSettings(), null, 2));
-      console.log('Track constraints:');
+      console.log("Track constraints:");
       console.log(JSON.stringify(videoTrack.getConstraints(), null, 2));
       mediaStreamStatus.set(MediaStreamStatusEnum.CONNECTED);
       mediaStream.set(captureStream);
 
       const capabilities = videoTrack.getCapabilities();
       const aspectRatio = capabilities.aspectRatio;
-      console.log('Aspect Ratio Constraints:', aspectRatio);
+      console.log("Aspect Ratio Constraints:", aspectRatio);
     } catch (err) {
       console.error(err);
     }
   },
   async switchCamera(mediaDevicedID: string, aspectRatio: number) {
-    console.log('Switching camera');
+    console.log("Switching camera");
     if (get(mediaStreamStatus) !== MediaStreamStatusEnum.CONNECTED) {
       return;
     }
@@ -89,15 +94,15 @@ export const mediaStreamActions = {
       audio: false,
       video: {
         width: {
-          ideal: BASE_HEIGHT * aspectRatio
+          ideal: BASE_HEIGHT * aspectRatio,
         },
         height: {
-          ideal: BASE_HEIGHT
+          ideal: BASE_HEIGHT,
         },
-        deviceId: mediaDevicedID
-      }
+        deviceId: mediaDevicedID,
+      },
     };
-    console.log('Switching camera', constraints);
+    console.log("Switching camera", constraints);
     await navigator.mediaDevices
       .getUserMedia(constraints)
       .then((stream) => {
@@ -114,5 +119,5 @@ export const mediaStreamActions = {
     });
     mediaStreamStatus.set(MediaStreamStatusEnum.DISCONNECTED);
     mediaStream.set(null);
-  }
+  },
 };
