@@ -1,6 +1,6 @@
 # Use with: uv pip install --no-cache --system --index-strategy=unsafe-best-match -r requirements.txt
 numpy
-diffusers
+diffusers<=0.33.1
 llvmlite>=0.39.0
 numba>=0.56.0
 transformers
