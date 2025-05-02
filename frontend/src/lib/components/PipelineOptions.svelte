@@ -53,19 +53,27 @@
       {#if advanceOptions}
         {#each advanceOptions as params (params.id)}
           {#if params.field === FieldType.RANGE}
-            <InputRange {params} bind:value={$pipelineValues[params.id]}
+            <InputRange
+              {params}
+              bind:value={$pipelineValues[params.id] as number}
             ></InputRange>
           {:else if params.field === FieldType.SEED}
-            <SeedInput {params} bind:value={$pipelineValues[params.id]}
+            <SeedInput
+              {params}
+              bind:value={$pipelineValues[params.id] as number}
             ></SeedInput>
           {:else if params.field === FieldType.TEXTAREA}
-            <TextArea {params} bind:value={$pipelineValues[params.id]}
+            <TextArea {params} bind:value={$pipelineValues[params.id] as string}
             ></TextArea>
           {:else if params.field === FieldType.CHECKBOX}
-            <Checkbox {params} bind:value={$pipelineValues[params.id]}
+            <Checkbox
+              {params}
+              bind:value={$pipelineValues[params.id] as boolean}
             ></Checkbox>
           {:else if params.field === FieldType.SELECT}
-            <Selectlist {params} bind:value={$pipelineValues[params.id]}
+            <Selectlist
+              {params}
+              bind:value={$pipelineValues[params.id] as string}
             ></Selectlist>
           {/if}
         {/each}

@@ -16,7 +16,7 @@ export const lcmLiveStatus = writable<LCMLiveStatus>(initStatus);
 export const streamId = writable<string | null>(null);
 
 // WebSocket connection
-let websocket: WebSocket;
+let websocket: WebSocket | null;
 
 // Register browser unload event listener to properly close WebSockets
 if (typeof window !== "undefined") {
