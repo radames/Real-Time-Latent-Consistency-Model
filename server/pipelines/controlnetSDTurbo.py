@@ -174,28 +174,6 @@ class Pipeline:
                 taesd_model, torch_dtype=torch_dtype, use_safetensors=True
             ).to(device)
 
-        if args.sfast:
-            print("\nRunning sfast compile\n")
-            from sfast.compilers.stable_diffusion_pipeline_compiler import (
-                compile,
-                CompilationConfig,
-            )
-
-            config = CompilationConfig.Default()
-            config.enable_xformers = True
-            config.enable_triton = True
-            config.enable_cuda_graph = True
-            self.pipe = compile(self.pipe, config=config)
-
-        if args.onediff:
-            print("\nRunning onediff compile\n")
-            from onediff.infer_compiler import oneflow_compile
-
-            self.pipe.unet = oneflow_compile(self.pipe.unet)
-            self.pipe.vae.encoder = oneflow_compile(self.pipe.vae.encoder)
-            self.pipe.vae.decoder = oneflow_compile(self.pipe.vae.decoder)
-            self.pipe.controlnet = oneflow_compile(self.pipe.controlnet)
-
         self.canny_torch = SobelOperator(device=device)
 
         self.pipe.scheduler = LCMScheduler.from_config(self.pipe.scheduler.config)

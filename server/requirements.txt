@@ -20,7 +20,7 @@ setuptools
 mpmath
 controlnet-aux
 sentencepiece
-optimum-quanto # has to be optimum-quanto==0.2.5 for pruna int4
+optimum-quanto==0.2.5
 gguf
 types-Pillow
 mypy

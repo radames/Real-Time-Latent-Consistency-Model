@@ -143,10 +143,10 @@ class SafetyChecker:
 
         self.device = device
         self.safety_checker = StableDiffusionSafetyChecker.from_pretrained(
-            "CompVis/stable-diffusion-safety-checker"
+            "CompVis/stable-diffusion-safety-checker",
         ).to(device)
         self.feature_extractor = CLIPFeatureExtractor.from_pretrained(
-            "openai/clip-vit-base-patch32"
+            "openai/clip-vit-base-patch32",
         )
 
     def __call__(

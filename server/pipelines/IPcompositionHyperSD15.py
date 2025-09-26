@@ -129,19 +129,6 @@ class Pipeline:
         # pipe.unet = oneflow_compile(pipe.unet, options=compile_options)
         # pipe.vae.decoder = oneflow_compile(pipe.vae.decoder, options=compile_options)
 
-        if args.sfast:
-            from sfast.compilers.stable_diffusion_pipeline_compiler import (
-                compile,
-                CompilationConfig,
-            )
-
-            config = CompilationConfig.Default()
-            # config.enable_xformers = True
-            config.enable_triton = True
-            config.enable_cuda_graph = True
-            # cofig.
-            self.pipe = compile(self.pipe, config=config)
-
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device)
         if device.type != "mps":

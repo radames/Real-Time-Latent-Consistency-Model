@@ -119,18 +119,6 @@ class Pipeline:
 
             self.pipe(prompt="warmup", num_inference_steps=1, guidance_scale=8.0)
 
-        if args.sfast:
-            from sfast.compilers.stable_diffusion_pipeline_compiler import (
-                compile,
-                CompilationConfig,
-            )
-
-            config = CompilationConfig.Default()
-            config.enable_xformers = True
-            config.enable_triton = True
-            config.enable_cuda_graph = True
-            self.pipe = compile(self.pipe, config=config)
-
         if args.compel:
             self.compel_proc = Compel(
                 tokenizer=self.pipe.tokenizer,

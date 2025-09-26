@@ -180,18 +180,6 @@ class Pipeline:
         )
         self.canny_torch = SobelOperator(device=device)
 
-        if args.sfast:
-            from sfast.compilers.stable_diffusion_pipeline_compiler import (
-                compile,
-                CompilationConfig,
-            )
-
-            config = CompilationConfig.Default()
-            config.enable_xformers = True
-            config.enable_triton = True
-            config.enable_cuda_graph = True
-            self.pipe = compile(self.pipe, config=config)
-
         self.pipe.set_progress_bar_config(disable=True)
         self.pipe.to(device=device, dtype=torch_dtype).to(device)
         if device.type != "mps":

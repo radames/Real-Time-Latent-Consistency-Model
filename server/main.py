@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 import markdown2
-from pipelines.utils.safety_checker import SafetyChecker
 from PIL import Image
 import logging
 from config import config, Args
@@ -53,8 +52,10 @@ class App:
         self.pipeline = pipeline_instance
         self.app = FastAPI()
         self.conn_manager = ConnectionManager()
-        self.safety_checker: SafetyChecker | None = None
+        self.safety_checker = None
         if self.args.safety_checker:
+            from pipelines.utils.safety_checker import SafetyChecker
+
             self.safety_checker = SafetyChecker(device=device.type)
         self.init_app()
 
@@ -80,9 +81,13 @@ class App:
                 # Handle websocket disconnection event
                 code = disconnect_error.code
                 if code == 1006:  # ABNORMAL_CLOSURE
-                    logging.info(f"WebSocket abnormally closed for user {user_id}: Connection was closed without a proper close handshake")
+                    logging.info(
+                        f"WebSocket abnormally closed for user {user_id}: Connection was closed without a proper close handshake"
+                    )
                 else:
-                    logging.info(f"WebSocket disconnected for user {user_id} with code {code}: {disconnect_error.reason}")
+                    logging.info(
+                        f"WebSocket disconnected for user {user_id} with code {code}: {disconnect_error.reason}"
+                    )
             except RuntimeError as e:
                 if any(err in str(e) for err in ERROR_MESSAGES):
                     logging.info(f"WebSocket disconnected for user {user_id}: {e}")
@@ -268,10 +273,14 @@ class App:
                 # Handle websocket disconnection event
                 code = disconnect_error.code
                 if code == 1006:  # ABNORMAL_CLOSURE
-                    logging.info(f"WebSocket abnormally closed during streaming for user {user_id}: Connection was closed without a proper close handshake")
+                    logging.info(
+                        f"WebSocket abnormally closed during streaming for user {user_id}: Connection was closed without a proper close handshake"
+                    )
                 else:
-                    logging.info(f"WebSocket disconnected during streaming for user {user_id} with code {code}: {disconnect_error.reason}")
-                
+                    logging.info(
+                        f"WebSocket disconnected during streaming for user {user_id} with code {code}: {disconnect_error.reason}"
+                    )
+
                 # Clean disconnection without error response
                 await self.conn_manager.disconnect(user_id)
                 raise HTTPException(status_code=204, detail="Connection closed")

@@ -102,7 +102,7 @@ class Pipeline:
         if args.pruna:
             # Create and smash your model
             smash_config = SmashConfig()
-            # smash_config["cacher"] = "deepcache"
+            smash_config["cacher"] = "deepcache"
             smash_config["compiler"] = "stable_fast"
             self.pipe = smash(model=self.pipe, smash_config=smash_config)
 

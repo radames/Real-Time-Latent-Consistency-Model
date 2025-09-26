@@ -16,8 +16,6 @@ class Args(BaseModel):
     pipeline: str
     ssl_certfile: str | None
     ssl_keyfile: str | None
-    sfast: bool
-    onediff: bool = False
     compel: bool = False
     debug: bool = False
     pruna: bool = False
@@ -111,18 +109,6 @@ parser.add_argument(
     action="store_true",
     default=False,
     help="Compel",
-)
-parser.add_argument(
-    "--sfast",
-    action="store_true",
-    default=False,
-    help="Enable Stable Fast",
-)
-parser.add_argument(
-    "--onediff",
-    action="store_true",
-    default=False,
-    help="Enable OneDiff",
 )
 parser.add_argument(
     "--pruna",
