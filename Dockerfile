@@ -7,6 +7,9 @@ ENV NODE_MAJOR=20
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
     build-essential \
+    python3.10 \
+    python3-pip \
+    python3-dev \
     git \
     ffmpeg \
     google-perftools \
@@ -23,15 +26,19 @@ RUN apt-get update && apt-get install nodejs -y
 
 COPY ./server/requirements.txt /code/requirements.txt
 
-# Install UV and Python 3.12 using official UV image
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-RUN uv python install 3.12
+# Download and install UV
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN chmod +x /uv-installer.sh && \
+    /uv-installer.sh && \
+    rm /uv-installer.sh
+
+ENV PATH="/root/.local/bin:$PATH"
 
 # Set up a new user named "user" with user ID 1000
 RUN useradd -m -u 1000 user
 
 # Install dependencies using UV as root
-RUN uv pip install --system --index-strategy=unsafe-best-match -r /code/requirements.txt 
+RUN uv pip install --no-cache --system --index-strategy=unsafe-best-match -r /code/requirements.txt 
 
 # Switch to the "user" user
 USER user
