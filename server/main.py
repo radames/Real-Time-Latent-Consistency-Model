@@ -31,14 +31,14 @@ ERROR_MESSAGES = [
 class BasePipeline(Protocol):
     class Info:
         @classmethod
-        def schema(cls) -> dict[str, Any]: ...
+        def model_json_schema(cls, **kwargs) -> dict[str, Any]: ...
 
         page_content: str | None
         input_mode: str
 
     class InputParams(ParamsModel):
         @classmethod
-        def schema(cls) -> dict[str, Any]: ...
+        def model_json_schema(cls, **kwargs) -> dict[str, Any]: ...
 
     def predict(self, params: ParamsModel) -> Image.Image | None: ...
 
@@ -305,13 +305,13 @@ class App:
         # route to setup frontend
         @self.app.get("/api/settings")
         async def settings() -> JSONResponse:
-            info_schema = self.pipeline.Info.schema()
+            info_schema = self.pipeline.Info.model_json_schema()
             info = self.pipeline.Info()
             page_content = ""
             if hasattr(info, "page_content") and info.page_content:
                 page_content = markdown2.markdown(info.page_content)
 
-            input_params = self.pipeline.InputParams.schema()
+            input_params = self.pipeline.InputParams.model_json_schema()
             return JSONResponse(
                 {
                     "info": info_schema,
