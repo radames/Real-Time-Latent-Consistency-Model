@@ -133,8 +133,7 @@ python server/main.py --reload --pipeline txt2imgLoraSDXL
 * `--ssl-keyfile`: SSL Key File (optional)
 * `--debug`: Print Inference time  
 * `--compel`: Compel option  
-* `--sfast`: Enable Stable Fast   
-* `--onediff`: Enable OneDiff
+* `--pruna`: Enable Pruna
 
 If you run using `bash build-run.sh` you can set `PIPELINE` variables to choose the pipeline you want to run
 

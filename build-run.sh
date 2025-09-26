@@ -13,7 +13,7 @@ if [ -z ${PIPELINE+x} ]; then
     PIPELINE="controlnet"
 fi
 if [ -z ${COMPILE+x} ]; then
-    COMPILE="--sfast"
+    COMPILE="--pruna"
 fi
 echo -e "\033[1;32m\npipeline: $PIPELINE \033[0m"
 echo -e "\033[1;32m\ncompile: $COMPILE \033[0m"
