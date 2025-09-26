@@ -1,10 +1,9 @@
-# Use with: uv pip install --no-cache --system --index-strategy=unsafe-best-match -r requirements.txt
+# Use with: uv pip install --index-strategy=unsafe-best-match -r server/requirements.txt
 numpy
-# diffusers<=0.33.1
 git+https://github.com/huggingface/diffusers.git
 llvmlite>=0.39.0
 numba>=0.56.0
-transformers
+transformers<4.52
 pydantic
 huggingface-hub
 hf_transfer
@@ -20,7 +19,7 @@ safetensors
 setuptools
 mpmath
 controlnet-aux
-sentencepiece==0.2.0
+sentencepiece
 optimum-quanto # has to be optimum-quanto==0.2.5 for pruna int4
 gguf
 types-Pillow
@@ -34,7 +33,5 @@ torchvision
 torchaudio
 xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
 pruna[stable-fast] ; sys_platform != 'darwin' or platform_machine != 'arm64'
-
-# stable_fast @ https://github.com/chengzeyi/stable-fast/releases/download/nightly/stable_fast-1.0.5.dev20241127+torch230cu121-cp310-cp310-manylinux2014_x86_64.whl ; sys_platform != 'darwin' or platform_machine != 'arm64'
-#oneflow @ https://github.com/siliconflow/oneflow_releases/releases/download/community_cu121/oneflow-0.9.1.dev20241114%2Bcu121-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl ; sys_platform != 'darwin' or platform_machine != 'arm64'
-#onediff @ git+https://github.com/siliconflow/onediff.git@main#egg=onediff ; sys_platform != 'darwin' or platform_machine != 'arm64'
+nvidia-ml-py
+torchao==0.10.0
